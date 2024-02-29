@@ -59,6 +59,8 @@ This library is based on the SQL interaction in the Microsoft ASP.NET Membership
 - Exception types and messages will be close to the `SQLMembershipProvider` validation and exceptions, however the full range such as provider key validation from text web-config translation will not be raised.
 - Password decoding is removed - this was tied to `UnsafeNativeMethods` which required Windows native binaries, such as `GetSHA1Hash`.
 - Database schema validation
+- Performance Counters (XML)
+- HttpException references
 
 # Disclaimer
 
