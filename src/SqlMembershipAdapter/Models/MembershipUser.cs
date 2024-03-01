@@ -1,9 +1,9 @@
-﻿namespace SqlMembershipAdapter
+﻿namespace SqlMembershipAdapter.Models
 {
     [Serializable]
     public class MembershipUser
     {
-        private readonly object _providerUserKey;
+        private readonly Guid? _providerUserKey;
 
         private readonly string _providerName;
         private readonly string? _passwordQuestion;
@@ -20,7 +20,7 @@
         private readonly DateTime _lastActivityDate;
         private readonly DateTime _lastPasswordChangedDate;
 
-        public object ProviderUserKey => _providerUserKey;
+        public Guid? ProviderUserKey => _providerUserKey;
 
         public string ProviderName => _providerName;
         public string? PasswordQuestion => _passwordQuestion;
@@ -40,7 +40,7 @@
         public MembershipUser(
             string providerName,
             string? userName,
-            object providerUserKey,
+            Guid? providerUserKey,
             string? email,
             string? passwordQuestion,
             string? comment,

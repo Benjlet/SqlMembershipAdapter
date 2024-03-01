@@ -1,6 +1,9 @@
-﻿namespace SqlMembershipAdapter
+﻿using SqlMembershipAdapter.Abstractions;
+using SqlMembershipAdapter.Models;
+
+namespace SqlMembershipAdapter
 {
-    public class SqlMembershipSettings
+    public class SqlMembershipSettings : ISqlMembershipSettings
     {
         private readonly string _connectionString;
 
@@ -133,7 +136,7 @@
             }
         }
 
-        public int? PasswordStrengthRegexTimeout { get; set; }
+        public int? PasswordStrengthRegexTimeoutMilliseconds { get; set; }
 
         public MembershipPasswordFormat PasswordFormat
         {

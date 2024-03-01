@@ -1,4 +1,4 @@
-﻿namespace SqlMembershipAdapter
+﻿namespace SqlMembershipAdapter.Models
 {
     public enum MembershipCreateStatus
     {
