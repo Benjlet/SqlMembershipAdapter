@@ -1,5 +1,9 @@
 ﻿namespace SqlMembershipAdapter.Models
 {
+    /// <summary>
+    /// Format for the Password field in the Membership table.
+    /// Encrypted is not supported.
+    /// </summary>
     public enum MembershipPasswordFormat
     {
         /// <summary>
@@ -13,9 +17,8 @@
         Hashed = 1,
 
         /// <summary>
-        /// The password is encrypted using reversible encryption (using <machineKey>) and stored in the database.
+        /// The password is encrypted using reversible encryption (machineKey) and stored in the database.
         /// </summary>
-        Encrypted = 2,
-
+        Encrypted = 2
     }
 }

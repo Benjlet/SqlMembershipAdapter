@@ -1,8 +1,8 @@
-﻿namespace SqlMembershipAdapter.Models
+﻿namespace SqlMembershipAdapter.Models.Result
 {
-    public class GetPasswordWithFormatResponse
+    internal class GetPasswordWithFormatResult
     {
-        public int Status { get; set; }
+        public bool IsRetrieved { get; set; }
         public string? Password { get; set; }
         public int PasswordFormat { get; set; }
         public string? PasswordSalt { get; set; }

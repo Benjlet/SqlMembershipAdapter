@@ -1,5 +1,8 @@
 ﻿namespace SqlMembershipAdapter.Models
 {
+    /// <summary>
+    /// The status of the user creation request.
+    /// </summary>
     public enum MembershipCreateStatus
     {
         /// <summary>
@@ -23,7 +26,7 @@
         InvalidQuestion = 3,
 
         /// <summary>
-        /// New passwordAnswer was not acceppted (invalid format).
+        /// New password answer was not acceppted (invalid format).
         /// </summary>
         InvalidAnswer = 4,
 

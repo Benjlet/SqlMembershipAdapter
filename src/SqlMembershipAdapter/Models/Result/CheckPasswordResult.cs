@@ -1,6 +1,6 @@
-﻿namespace SqlMembershipAdapter.Models
+﻿namespace SqlMembershipAdapter.Models.Result
 {
-    public class CheckPasswordResult
+    internal class CheckPasswordResult
     {
         private string? _passwordSalt = null;
 

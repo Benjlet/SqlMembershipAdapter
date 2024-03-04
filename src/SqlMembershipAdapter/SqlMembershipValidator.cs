@@ -1,5 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using SqlMembershipAdapter.Abstractions;
+using SqlMembershipAdapter.Models;
+using SqlMembershipAdapter.Models.Request;
 
 namespace SqlMembershipAdapter
 {
@@ -61,12 +63,12 @@ namespace SqlMembershipAdapter
 
         public bool ValidatePasswordQuestion(string? passwordQuestion)
         {
-            return (passwordQuestion != null || !_settings.RequiresQuestionAndAnswer) && (passwordQuestion == null || (passwordQuestion.Length != 0 && passwordQuestion.Length <= 256));
+            return (!string.IsNullOrWhiteSpace(passwordQuestion) || !_settings.RequiresQuestionAndAnswer) && (passwordQuestion == null || passwordQuestion.Length <= 256);
         }
 
         public bool ValidatePasswordAnswer(string? passwordAnswer)
         {
-            return (passwordAnswer != null || !_settings.RequiresQuestionAndAnswer) && (passwordAnswer == null || passwordAnswer.Length <= 128);
+            return (!string.IsNullOrWhiteSpace(passwordAnswer) || !_settings.RequiresQuestionAndAnswer) && (passwordAnswer == null || passwordAnswer.Length <= 128);
         }
 
         public bool ValidateUsername(string? username)
@@ -77,6 +79,105 @@ namespace SqlMembershipAdapter
         public bool ValidateEmail(string? email)
         {
             return (!string.IsNullOrWhiteSpace(email) || !_settings.RequiresUniqueEmail) && (email == null || email.Length <= 256);
+        }
+
+        public bool ValidateChangePasswordQuestionAnswer(ChangePasswordQuestionAndAnswerRequest request, out string? invalidParam)
+        {
+            invalidParam = null;
+
+            if (!ValidateUsername(request.Username))
+            {
+                invalidParam = nameof(request.Username);
+                return false;
+            }
+
+            if (!ValidatePassword(request.Password))
+            {
+                invalidParam = nameof(request.Password);
+                return false;
+            }
+
+            if (!ValidatePasswordQuestion(request.NewPasswordQuestion))
+            {
+                invalidParam = nameof(request.NewPasswordQuestion);
+                return false;
+            }
+
+            if (!ValidatePasswordAnswer(request.NewPasswordAnswer))
+            {
+                invalidParam = nameof(request.NewPasswordAnswer);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool ValidateChangePasswordRequest(ChangePasswordRequest request, out string? invalidParam)
+        {
+            invalidParam = null;
+
+            if (!ValidateUsername(request.Username))
+            {
+                invalidParam = nameof(request.Username);
+                return false;
+            }
+
+            if (!ValidatePassword(request.NewPassword))
+            {
+                invalidParam = nameof(request.NewPassword);
+                return false;
+            }
+
+            if (!ValidatePassword(request.OldPassword))
+            {
+                invalidParam = nameof(request.OldPassword);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool ValidateCreateUserRequest(CreateUserRequest request, out MembershipCreateStatus status)
+        {
+            status = MembershipCreateStatus.Success;
+
+            if (!ValidatePassword(request.Password))
+            {
+                status = MembershipCreateStatus.InvalidPassword;
+                return false;
+            }
+
+            if (!ValidatePasswordAnswer(request.PasswordAnswer))
+            {
+                status = MembershipCreateStatus.InvalidAnswer;
+                return false;
+            }
+
+            if (!ValidateUsername(request.Username))
+            {
+                status = MembershipCreateStatus.InvalidUserName;
+                return false;
+            }
+
+            if (!ValidateEmail(request.Email))
+            {
+                status = MembershipCreateStatus.InvalidEmail;
+                return false;
+            }
+
+            if (!ValidatePasswordQuestion(request.PasswordQuestion))
+            {
+                status = MembershipCreateStatus.InvalidQuestion;
+                return false;
+            }
+
+            if (!ValidatePasswordComplexity(request.Password))
+            {
+                status = MembershipCreateStatus.InvalidPassword;
+                return false;
+            }
+
+            return true;
         }
     }
 }
