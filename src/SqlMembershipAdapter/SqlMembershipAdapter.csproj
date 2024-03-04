@@ -4,7 +4,28 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>SqlMembershipAdapter</PackageId>
+		<PackageVersion>1.0.0</PackageVersion>
+		<Authors>Benjlet</Authors>
+		<Company>Benjlet</Company>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/Benjlet/SqlMembershipAdapter</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>membership;sql;provider;legacy;web;authentication;user;password</PackageTags>
+		<PackageProjectUrl>https://github.com/Benjlet/SqlMembershipAdapter</PackageProjectUrl>
+		<Description>Adapter for legacy Microsoft ASP.NET Membership tables without the need for a .NET Framework web configuration file.</Description>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageIcon>icon.png</PackageIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="icon.png" Pack="true" PackagePath="" />
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />

@@ -2,7 +2,7 @@
 
 Adapter for legacy Microsoft ASP.NET Membership tables without the need for Web configuration.
 
-Continuing to use these tables is strongly discouraged - you may use this library to at least remove a direct .NET Framework dependency, however you should consider the security implications of continuing to use legacy Membership tables (see Disclaimer).
+Continuing to use these tables is discouraged on modern systems - you may use this library to at least remove a direct .NET Framework dependency or adapt to your own needs, however you should consider the security risks of not migrating.
 
 # Usage
 
@@ -32,7 +32,7 @@ You would have an associated Web configuration, looking something like this:
 </membership>
 ```
 
-For this library, the models are replaced with request and response models, rather than lots of `ref` and `out` params like in the original implementation - the above example would therefore look like this:
+For this library, the models are replaced with request and response models, rather than lots of `ref` and `out` params like in the original implementation - the above two features would therefore be condensed to:
 
 ```
 SqlMembershipService membership = new(new SqlMembershipSettings()
@@ -40,25 +40,23 @@ SqlMembershipService membership = new(new SqlMembershipSettings()
     MinRequiredNonAlphanumericCharacters = 1
 });
 
-CreateUserResponse response = membership.CreateUser(new CreateUserRequest()
-{
-    Email = "email@example.com",
-    Password = "hunter2"
-});
+CreateUserResult result = membership.CreateUser(new CreateUserRequest(username, password, email, null, null, true));
 ```
 
-You will need to adapt your Membership code throughout to send and receive these models, however the same data will ultimately be returned.
+You will need to adapt your Membership code throughout to send and receive these models, however the same data will ultimately be returned and relevant exceptions thrown.
 
 # How it was created
 
-This library is based on the SQL interaction in the Microsoft ASP.NET Membership [source code](https://github.com/microsoft/referencesource/tree/master/System.Web.ApplicationServices) which has been made available to the public - the original implementation  is closely linked to Windows and the `System.Web.ApplicationServices` web config serialization.
+This library is based on the SQL interaction in the Microsoft ASP.NET Membership [source code](https://github.com/microsoft/referencesource/tree/master/System.Web.ApplicationServices) which has been made available to the public - the original implementation is closely linked to Windows and the `System.Web.ApplicationServices` web config serialization.
+
+The code attempts to retain identical conditions for exception, code flow, and try/finally blocks, with some adjustments throughout to enable unit testing and removing web config file references.
 
 # Removed features
 
 - Machine key and web config validation.
-- Exception types and messages will be close to the `SQLMembershipProvider` validation and exceptions, however the full range such as provider key validation from text web-config translation will not be raised.
-- Password decoding and keyed hash options is removed - this was tied to `UnsafeNativeMethods` which required Windows native binaries, such as `GetSHA1Hash`
-- Database schema validation
+- Exception types and messages will be close to the `SQLMembershipProvider` validation and exceptions, however the full range such as provider key validation from text web-config translation will not get thrown
+- Password decoding and keyed hash options is removed - this was tied to `UnsafeNativeMethods.cs` which required Windows native binaries, such as `GetSHA1Hash`
+- Membership schema validation
 - Performance Counters (XML)
 - HttpException references
 

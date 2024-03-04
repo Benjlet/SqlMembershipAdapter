@@ -1,7 +1,9 @@
 ﻿using System.Data;
 using System.Data.SqlClient;
 using SqlMembershipAdapter.Abstractions;
+using SqlMembershipAdapter.Exceptions;
 using SqlMembershipAdapter.Models;
+using SqlMembershipAdapter.Models.Result;
 
 namespace SqlMembershipAdapter
 {
@@ -53,11 +55,11 @@ namespace SqlMembershipAdapter
                     cmd.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, (int)_settings.PasswordFormat));
                     cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, currentTime));
 
-                    SqlParameter p = CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey);
-                    p.Direction = ParameterDirection.InputOutput;
-                    cmd.Parameters.Add(p);
+                    SqlParameter userIdParam = CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey);
+                    userIdParam.Direction = ParameterDirection.InputOutput;
+                    cmd.Parameters.Add(userIdParam);
 
-                    p = new SqlParameter("@ReturnValue", SqlDbType.Int)
+                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
                     {
                         Direction = ParameterDirection.ReturnValue
                     };
@@ -963,7 +965,7 @@ namespace SqlMembershipAdapter
             }
         }
 
-        public async Task<GetPasswordWithFormatResponse> GetPasswordWithFormat(string username, bool updateLastLoginActivityDate)
+        public async Task<GetPasswordWithFormatResult> GetPasswordWithFormat(string username, bool updateLastLoginActivityDate)
         {
             try
             {
@@ -992,45 +994,49 @@ namespace SqlMembershipAdapter
 
                     using SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow);
 
+                    int status = (p?.Value != null) ? ((int)p.Value) : -1;
+
+                    if (status != 0)
+                    {
+                        string exceptionText = GetExceptionText(status);
+
+                        throw (status is (>= 2 and <= 6) or 99)
+                            ? new MembershipPasswordException(exceptionText) : new ProviderException(exceptionText);
+                    }
+
+                    int passwordFormat = 0;
+                    string? password = null;
+                    string? passwordSalt = null;
+                    int failedPasswordAttemptCount = 0;
+                    int failedPasswordAnswerAttemptCount = 0;
+                    bool isApproved = false;
+                    DateTime lastLoginDate = DateTime.UtcNow;
+                    DateTime lastActivityDate = DateTime.UtcNow;
+
                     if (await reader.ReadAsync())
                     {
-                        string password = reader.GetString(0);
-                        int passwordFormat = reader.GetInt32(1);
-                        string passwordSalt = reader.GetString(2);
-                        int failedPasswordAttemptCount = reader.GetInt32(3);
-                        int failedPasswordAnswerAttemptCount = reader.GetInt32(4);
-                        bool isApproved = reader.GetBoolean(5);
-                        DateTime lastLoginDate = reader.GetDateTime(6);
-                        DateTime lastActivityDate = reader.GetDateTime(7);
+                        password = reader.GetString(0);
+                        passwordFormat = reader.GetInt32(1);
+                        passwordSalt = reader.GetString(2);
+                        failedPasswordAttemptCount = reader.GetInt32(3);
+                        failedPasswordAnswerAttemptCount = reader.GetInt32(4);
+                        isApproved = reader.GetBoolean(5);
+                        lastLoginDate = reader.GetDateTime(6);
+                        lastActivityDate = reader.GetDateTime(7);
+                    }
 
-                        return new GetPasswordWithFormatResponse()
-                        {
-                            Password = password,
-                            PasswordFormat = passwordFormat,
-                            PasswordSalt = passwordSalt,
-                            FailedPasswordAttemptCount = failedPasswordAttemptCount,
-                            FailedPasswordAnswerAttemptCount = failedPasswordAnswerAttemptCount,
-                            IsApproved = isApproved,
-                            LastLoginDate = lastLoginDate,
-                            LastActivityDate = lastActivityDate,
-                            Status = (p?.Value != null) ? ((int)p.Value) : -1
-                        };
-                    }
-                    else
+                    return new GetPasswordWithFormatResult()
                     {
-                        return new GetPasswordWithFormatResponse()
-                        {
-                            Password = null,
-                            PasswordFormat = 0,
-                            PasswordSalt = null,
-                            FailedPasswordAttemptCount = 0,
-                            FailedPasswordAnswerAttemptCount = 0,
-                            IsApproved = false,
-                            LastLoginDate = DateTime.UtcNow,
-                            LastActivityDate = DateTime.UtcNow,
-                            Status = (p?.Value != null) ? ((int)p.Value) : -1
-                        };
-                    }
+                        Password = password,
+                        PasswordFormat = passwordFormat,
+                        PasswordSalt = passwordSalt,
+                        FailedPasswordAttemptCount = failedPasswordAttemptCount,
+                        FailedPasswordAnswerAttemptCount = failedPasswordAnswerAttemptCount,
+                        IsApproved = isApproved,
+                        LastLoginDate = lastLoginDate,
+                        LastActivityDate = lastActivityDate,
+                        IsRetrieved = status == 0
+                    };
                 }
                 finally
                 {
@@ -1070,13 +1076,12 @@ namespace SqlMembershipAdapter
                     cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, dtNow));
                     cmd.Parameters.Add(CreateInputParam("@LastLoginDate", SqlDbType.DateTime, isPasswordCorrect ? dtNow : lastLoginDate));
                     cmd.Parameters.Add(CreateInputParam("@LastActivityDate", SqlDbType.DateTime, isPasswordCorrect ? dtNow : lastActivityDate));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
+                    
+                    cmd.Parameters.Add(new("@ReturnValue", SqlDbType.Int)
                     {
                         Direction = ParameterDirection.ReturnValue
-                    };
+                    });
 
-                    cmd.Parameters.Add(p);
                     await cmd.ExecuteNonQueryAsync();
                 }
                 finally
@@ -1110,13 +1115,13 @@ namespace SqlMembershipAdapter
         private static string? GetNullableString(SqlDataReader reader, int col) =>
             reader.IsDBNull(col) ? null : reader.GetString(col);
 
-        internal static bool IsStatusDueToBadPassword(int status) =>
+        private static bool IsStatusDueToBadPassword(int status) =>
             status >= 2 && status <= 6 || status == 99;
 
         private static DateTime RoundToSeconds(DateTime utcDateTime) =>
             new(utcDateTime.Year, utcDateTime.Month, utcDateTime.Day, utcDateTime.Hour, utcDateTime.Minute, utcDateTime.Second, DateTimeKind.Utc);
 
-        internal static string GetExceptionText(int status) => status switch
+        private static string GetExceptionText(int status) => status switch
         {
             0 => string.Empty,
             1 => "The user was not found.",

@@ -3,6 +3,7 @@ using SqlMembershipAdapter.Models;
 
 namespace SqlMembershipAdapter
 {
+    /// <inheritdoc cref="ISqlMembershipSettings"/>
     public class SqlMembershipSettings : ISqlMembershipSettings
     {
         private readonly string _connectionString;
@@ -15,18 +16,20 @@ namespace SqlMembershipAdapter
 
         private string _passwordStrengthRegularExpression = string.Empty;
         private string _applicationName = "SqlMembershipProvider";
-        private string _description = "SQL membership provider";
 
         private MembershipPasswordFormat _passwordFormat = MembershipPasswordFormat.Hashed;
 
+        /// <summary>
+        /// Initialises new SqlMembershipSettings details with the supplied Membership SQL database connection string.
+        /// </summary>
+        /// <param name="connectionString">Connection string to the Membership SQL database.</param>
+        /// <exception cref="ArgumentNullException"/>
         public SqlMembershipSettings(string connectionString)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        /// <summary>
-        /// Custom application name, originally determined from <c>HostingEnvironment.ApplicationVirtualPath</c> and <c>Process.GetCurrentProcess</c>.
-        /// </summary>
+        /// <inheritdoc/>
         public string ApplicationName
         {
             get => _applicationName;
@@ -41,26 +44,16 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public string ConnectionString => _connectionString;
 
-        public string Description
-        {
-            get => _description;
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value) || value.Length > 256)
-                {
-                    throw new ArgumentException(Description);
-                }
-
-                _description = value.Trim();
-            }
-        }
-
-        public bool EnablePasswordReset { get; set; } = true;
+        /// <inheritdoc/>
         public bool RequiresQuestionAndAnswer { get; set; } = true;
+
+        /// <inheritdoc/>
         public bool RequiresUniqueEmail { get; set; } = true;
 
+        /// <inheritdoc/>
         public int CommandTimeoutSeconds
         {
             get => _commandTimeoutSeconds;
@@ -75,6 +68,7 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public int MaxInvalidPasswordAttempts
         {
             get => _maxInvalidPasswordAttempts;
@@ -89,6 +83,7 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public int PasswordAttemptWindow
         {
             get => _passwordAttemptWindow;
@@ -103,6 +98,7 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public int MinRequiredPasswordLength
         {
             get => _minRequiredPasswordLength;
@@ -117,6 +113,7 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public int MinRequiredNonAlphanumericCharacters
         {
             get => _minRequiredNonAlphanumericCharacters;
@@ -136,8 +133,10 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public int? PasswordStrengthRegexTimeoutMilliseconds { get; set; }
 
+        /// <inheritdoc/>
         public MembershipPasswordFormat PasswordFormat
         {
             get => _passwordFormat;
@@ -152,8 +151,10 @@ namespace SqlMembershipAdapter
             }
         }
 
+        /// <inheritdoc/>
         public HashAlgorithmType HashAlgorithm { get; set; } = HashAlgorithmType.SHA1;
 
+        /// <inheritdoc/>
         public string PasswordStrengthRegularExpression
         {
             get => _passwordStrengthRegularExpression;

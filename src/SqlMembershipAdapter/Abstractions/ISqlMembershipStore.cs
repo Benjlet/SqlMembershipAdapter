@@ -1,4 +1,5 @@
 ﻿using SqlMembershipAdapter.Models;
+using SqlMembershipAdapter.Models.Result;
 
 namespace SqlMembershipAdapter.Abstractions
 {
@@ -13,7 +14,7 @@ namespace SqlMembershipAdapter.Abstractions
         Task<MembershipUserCollection> FindUsersByName(string usernameToMatch, int pageIndex, int pageSize);
         Task<MembershipUserCollection> GetAllUsers(int pageIndex, int pageSize);
         Task<int> GetNumberOfUsersOnline(int timeWindowMinutes);
-        Task<GetPasswordWithFormatResponse> GetPasswordWithFormat(string username, bool updateLastLoginActivityDate);
+        Task<GetPasswordWithFormatResult> GetPasswordWithFormat(string username, bool updateLastLoginActivityDate);
         Task<MembershipUser?> GetUser(Guid providerUserKey, bool userIsOnline);
         Task<MembershipUser?> GetUser(string username, bool updateLastActivity);
         Task<string?> GetUsernameByEmail(string? email);
