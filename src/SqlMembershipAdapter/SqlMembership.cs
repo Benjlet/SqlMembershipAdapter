@@ -112,9 +112,9 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(request.NewPasswordAnswer));
             }
 
-            bool isUpdated = await _sqlStore.ChangePasswordQuestionAndAnswer(request.Username, request.Password, request.NewPasswordQuestion, encodedPasswordAnswer);
+            await _sqlStore.ChangePasswordQuestionAndAnswer(request.Username, request.Password, request.NewPasswordQuestion, encodedPasswordAnswer);
 
-            return isUpdated;
+            return true;
         }
 
         /// <inheritdoc/>
@@ -323,7 +323,7 @@ namespace SqlMembershipAdapter
         {
             GetPasswordWithFormatResult passwordWithFormat = await _sqlStore.GetPasswordWithFormat(username, updateLastLoginActivityDate);
 
-            if (!passwordWithFormat.IsRetrieved || passwordWithFormat.Password == null || (!passwordWithFormat.IsApproved && failIfNotApproved))
+            if (passwordWithFormat.Password == null || (!passwordWithFormat.IsApproved && failIfNotApproved))
             {
                 return new CheckPasswordResult()
                 {

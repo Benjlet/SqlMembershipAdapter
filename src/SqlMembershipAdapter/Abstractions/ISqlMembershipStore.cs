@@ -6,7 +6,7 @@ namespace SqlMembershipAdapter.Abstractions
     internal interface ISqlMembershipStore
     {
         Task<bool> ChangePassword(string username, string newPassword, string? passwordSalt, int passwordFormat);
-        Task<bool> ChangePasswordQuestionAndAnswer(string username, string password, string? newPasswordQuestion, string? newPasswordAnswer);
+        Task ChangePasswordQuestionAndAnswer(string username, string password, string? newPasswordQuestion, string? newPasswordAnswer);
         Task CheckPassword(string username, bool isPasswordCorrect, bool updateLastLoginActivityDate, DateTime lastLoginDate, DateTime lastActivityDate);
         Task<CreateUserResult> CreateUser(Guid? providerUserKey, string? userName, string? password, string? passwordSalt, string? email, string? passwordQuestion, string? passwordAnswer, bool isApproved);
         Task<bool> DeleteUser(string username, bool deleteAllRelatedData);

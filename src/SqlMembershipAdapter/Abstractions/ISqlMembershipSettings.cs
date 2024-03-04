@@ -9,6 +9,7 @@ namespace SqlMembershipAdapter.Abstractions
     {
         /// <summary>
         /// The application name.
+        /// If you are accessing existing Membership data you should use the name.
         /// </summary>
         string ApplicationName { get; set; }
 
