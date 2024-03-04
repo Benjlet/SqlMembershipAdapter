@@ -75,15 +75,12 @@ namespace SqlMembershipAdapter.Tests
                 FailedPasswordAnswerAttemptCount = 0,
                 FailedPasswordAttemptCount = 0,
                 IsApproved = true,
-                IsRetrieved = true,
                 LastActivityDate = DateTime.UtcNow,
                 LastLoginDate = DateTime.UtcNow,
                 Password = encodedPassword,
                 PasswordFormat = 1,
                 PasswordSalt = salt
             });
-
-            _mockStore.Setup(x => x.ChangePasswordQuestionAndAnswer(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
             _mockEncryption.Setup(x => x.Encode(It.Is<string>(p => p == password), It.Is<int>(i => i == 1), It.Is<string>(s => s == salt))).Returns(encodedPassword);
 
@@ -94,48 +91,6 @@ namespace SqlMembershipAdapter.Tests
                 newAnswer));
 
             Assert.That(result, Is.True);
-        }
-
-        [Test]
-        public async Task ChangePasswordQuestionAndAnswer_FinalChangeFailed_ReturnsFalse()
-        {
-            string username = "username";
-            string password = "password";
-            string newQuestion = "newQuestion";
-            string newAnswer = "newAnswer";
-
-            string salt = "S4lt";
-            string encodedPassword = "3nc0D3dP455W0rd!";
-
-            string? failedParam = "NewPasswordAnswer";
-
-            _mockValidator.Setup(x => x.ValidateChangePasswordQuestionAnswer(It.IsAny<ChangePasswordQuestionAndAnswerRequest>(), out failedParam)).Returns(true);
-            _mockValidator.Setup(x => x.ValidatePasswordAnswer(It.IsAny<string>())).Returns(true);
-
-            _mockStore.Setup(x => x.GetPasswordWithFormat(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(new GetPasswordWithFormatResult()
-            {
-                FailedPasswordAnswerAttemptCount = 0,
-                FailedPasswordAttemptCount = 0,
-                IsApproved = true,
-                IsRetrieved = true,
-                LastActivityDate = DateTime.UtcNow,
-                LastLoginDate = DateTime.UtcNow,
-                Password = encodedPassword,
-                PasswordFormat = 1,
-                PasswordSalt = salt
-            });
-
-            _mockStore.Setup(x => x.ChangePasswordQuestionAndAnswer(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(false);
-
-            _mockEncryption.Setup(x => x.Encode(It.Is<string>(p => p == password), It.Is<int>(i => i == 1), It.Is<string>(s => s == salt))).Returns(encodedPassword);
-
-            bool result = await _sut.ChangePasswordQuestionAndAnswer(new ChangePasswordQuestionAndAnswerRequest(
-                username,
-                password,
-                newQuestion,
-                newAnswer));
-
-            Assert.That(result, Is.False);
         }
 
         [Test]
@@ -159,7 +114,6 @@ namespace SqlMembershipAdapter.Tests
                 FailedPasswordAnswerAttemptCount = 0,
                 FailedPasswordAttemptCount = 0,
                 IsApproved = true,
-                IsRetrieved = true,
                 LastActivityDate = DateTime.UtcNow,
                 LastLoginDate = DateTime.UtcNow,
                 Password = encodedPassword,
@@ -202,7 +156,6 @@ namespace SqlMembershipAdapter.Tests
                 FailedPasswordAnswerAttemptCount = 0,
                 FailedPasswordAttemptCount = 0,
                 IsApproved = true,
-                IsRetrieved = false,
                 LastActivityDate = DateTime.UtcNow,
                 LastLoginDate = DateTime.UtcNow,
                 Password = encodedPassword,

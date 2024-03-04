@@ -48,7 +48,7 @@ namespace SqlMembershipAdapter
         public string ConnectionString => _connectionString;
 
         /// <inheritdoc/>
-        public bool RequiresQuestionAndAnswer { get; set; } = true;
+        public bool RequiresQuestionAndAnswer { get; set; }
 
         /// <inheritdoc/>
         public bool RequiresUniqueEmail { get; set; } = true;

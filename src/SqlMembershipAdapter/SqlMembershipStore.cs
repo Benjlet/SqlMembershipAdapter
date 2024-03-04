@@ -27,154 +27,110 @@ namespace SqlMembershipAdapter
             string? passwordAnswer,
             bool isApproved)
         {
+            DateTime currentTime = RoundToSeconds(DateTime.UtcNow);
+
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_CreateUser", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, userName));
+            command.Parameters.Add(CreateInputParam("@Password", SqlDbType.NVarChar, password));
+            command.Parameters.Add(CreateInputParam("@PasswordSalt", SqlDbType.NVarChar, passwordSalt));
+            command.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, email));
+            command.Parameters.Add(CreateInputParam("@PasswordQuestion", SqlDbType.NVarChar, passwordQuestion));
+            command.Parameters.Add(CreateInputParam("@PasswordAnswer", SqlDbType.NVarChar, passwordAnswer));
+            command.Parameters.Add(CreateInputParam("@IsApproved", SqlDbType.Bit, isApproved));
+            command.Parameters.Add(CreateInputParam("@UniqueEmail", SqlDbType.Int, _settings.RequiresUniqueEmail ? 1 : 0));
+            command.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, (int)_settings.PasswordFormat));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, currentTime));
+
+            SqlParameter userIdParam = command.Parameters.Add(CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey));
+            userIdParam.Direction = ParameterDirection.InputOutput;
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
             try
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-
-                try
-                {
-                    await connection.OpenAsync();
-
-                    DateTime currentTime = RoundToSeconds(DateTime.UtcNow);
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_CreateUser", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, userName));
-                    cmd.Parameters.Add(CreateInputParam("@Password", SqlDbType.NVarChar, password));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordSalt", SqlDbType.NVarChar, passwordSalt));
-                    cmd.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, email));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordQuestion", SqlDbType.NVarChar, passwordQuestion));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordAnswer", SqlDbType.NVarChar, passwordAnswer));
-                    cmd.Parameters.Add(CreateInputParam("@IsApproved", SqlDbType.Bit, isApproved));
-                    cmd.Parameters.Add(CreateInputParam("@UniqueEmail", SqlDbType.Int, _settings.RequiresUniqueEmail ? 1 : 0));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, (int)_settings.PasswordFormat));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, currentTime));
-
-                    SqlParameter userIdParam = CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey);
-                    userIdParam.Direction = ParameterDirection.InputOutput;
-                    cmd.Parameters.Add(userIdParam);
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    try
-                    {
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                    catch (SqlException sqlEx)
-                    {
-                        if (sqlEx.Number == 2627 || sqlEx.Number == 2601 || sqlEx.Number == 2512)
-                        {
-                            return new CreateUserResult(MembershipCreateStatus.DuplicateUserName);
-                        }
-
-                        throw;
-                    }
-
-                    int iStatus = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    if (iStatus < 0 || iStatus > (int)MembershipCreateStatus.ProviderError)
-                    {
-                        iStatus = (int)MembershipCreateStatus.ProviderError;
-                    }
-
-                    MembershipCreateStatus status = (MembershipCreateStatus)iStatus;
-
-                    if (iStatus != 0)
-                    {
-                        return new CreateUserResult(status);
-                    }
-
-                    string? userIdText = cmd.Parameters["@UserId"].Value.ToString();
-
-                    Guid? userId = !string.IsNullOrWhiteSpace(userIdText) ? new Guid(userIdText) : null;
-
-                    currentTime = currentTime.ToLocalTime();
-
-                    MembershipUser user = new(
-                        providerName: _settings.ApplicationName,
-                        userName: userName,
-                        providerUserKey: userId,
-                        email: email,
-                        passwordQuestion: passwordQuestion,
-                        comment: null,
-                        isApproved: isApproved,
-                        isLockedOut: false,
-                        creationDate: currentTime,
-                        lastLoginDate: currentTime,
-                        lastActivityDate: currentTime,
-                        lastPasswordChangedDate: currentTime,
-                        lastLockoutDate: new DateTime(1754, 1, 1));
-
-                    return new CreateUserResult(user, status);
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                await command.ExecuteNonQueryAsync();
             }
-            catch
+            catch (SqlException sqlEx)
             {
+                if (sqlEx.Number == 2627 || sqlEx.Number == 2601 || sqlEx.Number == 2512)
+                {
+                    return new CreateUserResult(MembershipCreateStatus.DuplicateUserName);
+                }
+
                 throw;
             }
+
+            int iStatus = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            if (iStatus < 0 || iStatus > (int)MembershipCreateStatus.ProviderError)
+            {
+                iStatus = (int)MembershipCreateStatus.ProviderError;
+            }
+
+            MembershipCreateStatus status = (MembershipCreateStatus)iStatus;
+
+            if (iStatus != 0)
+            {
+                return new CreateUserResult(status);
+            }
+
+            string? userIdText = userIdParam.Value?.ToString();
+
+            Guid? userId = !string.IsNullOrWhiteSpace(userIdText) ? new Guid(userIdText) : null;
+
+            currentTime = currentTime.ToLocalTime();
+
+            MembershipUser user = new(
+                providerName: _settings.ApplicationName,
+                userName: userName,
+                providerUserKey: userId,
+                email: email,
+                passwordQuestion: passwordQuestion,
+                comment: null,
+                isApproved: isApproved,
+                isLockedOut: false,
+                creationDate: currentTime,
+                lastLoginDate: currentTime,
+                lastActivityDate: currentTime,
+                lastPasswordChangedDate: currentTime,
+                lastLockoutDate: new DateTime(1754, 1, 1));
+
+            return new CreateUserResult(user, status);
         }
 
-        public async Task<bool> ChangePasswordQuestionAndAnswer(string username, string password, string? newPasswordQuestion, string? newPasswordAnswer)
+        public async Task ChangePasswordQuestionAndAnswer(string username, string password, string? newPasswordQuestion, string? newPasswordAnswer)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_ChangePasswordQuestionAndAnswer", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@NewPasswordQuestion", SqlDbType.NVarChar, newPasswordQuestion));
+            command.Parameters.Add(CreateInputParam("@NewPasswordAnswer", SqlDbType.NVarChar, newPasswordAnswer));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            if (status != 0)
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-
-                try
-                {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_ChangePasswordQuestionAndAnswer", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@NewPasswordQuestion", SqlDbType.NVarChar, newPasswordQuestion));
-                    cmd.Parameters.Add(CreateInputParam("@NewPasswordAnswer", SqlDbType.NVarChar, newPasswordAnswer));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    await cmd.ExecuteNonQueryAsync();
-
-                    int status = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    if (status != 0)
-                    {
-                        throw new ProviderException(GetExceptionText(status));
-                    }
-
-                    return status == 0;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
-            }
-            catch
-            {
-                throw;
+                throw new ProviderException(GetExceptionText(status));
             }
         }
 
@@ -183,90 +139,65 @@ namespace SqlMembershipAdapter
             List<MembershipUser> users = [];
             int totalRecords = 0;
 
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_FindUsersByName", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserNameToMatch", SqlDbType.NVarChar, usernameToMatch));
+            command.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
+            command.Parameters.Add(CreateInputParam("@PageSize", SqlDbType.Int, pageSize));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+
+            while (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
+                string? username, email, passwordQuestion, comment;
+                bool isApproved;
+                DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
+                Guid userId;
+                bool isLockedOut;
+                DateTime dtLastLockoutDate;
 
-                try
-                {
-                    await connection.OpenAsync();
+                username = GetNullableString(reader, 0);
+                email = GetNullableString(reader, 1);
+                passwordQuestion = GetNullableString(reader, 2);
+                comment = GetNullableString(reader, 3);
+                isApproved = reader.GetBoolean(4);
+                dtCreate = reader.GetDateTime(5).ToLocalTime();
+                dtLastLogin = reader.GetDateTime(6).ToLocalTime();
+                dtLastActivity = reader.GetDateTime(7).ToLocalTime();
+                dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
+                userId = reader.GetGuid(9);
+                isLockedOut = reader.GetBoolean(10);
+                dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
 
-                    SqlCommand cmd = new("dbo.aspnet_Membership_FindUsersByName", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserNameToMatch", SqlDbType.NVarChar, usernameToMatch));
-                    cmd.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
-                    cmd.Parameters.Add(CreateInputParam("@PageSize", SqlDbType.Int, pageSize));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    try
-                    {
-                        using SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-                        while (await reader.ReadAsync())
-                        {
-                            string? username, email, passwordQuestion, comment;
-                            bool isApproved;
-                            DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
-                            Guid userId;
-                            bool isLockedOut;
-                            DateTime dtLastLockoutDate;
-
-                            username = GetNullableString(reader, 0);
-                            email = GetNullableString(reader, 1);
-                            passwordQuestion = GetNullableString(reader, 2);
-                            comment = GetNullableString(reader, 3);
-                            isApproved = reader.GetBoolean(4);
-                            dtCreate = reader.GetDateTime(5).ToLocalTime();
-                            dtLastLogin = reader.GetDateTime(6).ToLocalTime();
-                            dtLastActivity = reader.GetDateTime(7).ToLocalTime();
-                            dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
-                            userId = reader.GetGuid(9);
-                            isLockedOut = reader.GetBoolean(10);
-                            dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
-
-                            users.Add(new MembershipUser(
-                                providerName: _settings.ApplicationName,
-                                userName: username,
-                                providerUserKey: userId,
-                                email: email,
-                                passwordQuestion: passwordQuestion,
-                                comment: comment,
-                                isApproved: isApproved,
-                                isLockedOut: isLockedOut,
-                                creationDate: dtCreate,
-                                lastLoginDate: dtLastLogin,
-                                lastActivityDate: dtLastActivity,
-                                lastPasswordChangedDate: dtLastPassChange,
-                                lastLockoutDate: dtLastLockoutDate));
-                        }
-                    }
-                    finally
-                    {
-                        if (p.Value != null && p.Value is int)
-                        {
-                            totalRecords = (int)p.Value;
-                        }
-                    }
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                users.Add(new MembershipUser(
+                    providerName: _settings.ApplicationName,
+                    userName: username,
+                    providerUserKey: userId,
+                    email: email,
+                    passwordQuestion: passwordQuestion,
+                    comment: comment,
+                    isApproved: isApproved,
+                    isLockedOut: isLockedOut,
+                    creationDate: dtCreate,
+                    lastLoginDate: dtLastLogin,
+                    lastActivityDate: dtLastActivity,
+                    lastPasswordChangedDate: dtLastPassChange,
+                    lastLockoutDate: dtLastLockoutDate));
             }
-            catch
+
+            if (returnParameter?.Value is not null and int)
             {
-                throw;
+                totalRecords = (int)returnParameter.Value;
             }
 
             return new MembershipUserCollection(users, totalRecords);
@@ -277,89 +208,65 @@ namespace SqlMembershipAdapter
             List<MembershipUser> users = [];
             int totalRecords = 0;
 
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_FindUsersByEmail", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@EmailToMatch", SqlDbType.NVarChar, emailToMatch));
+            command.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
+            command.Parameters.Add(CreateInputParam("@PageSize", SqlDbType.Int, pageSize));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+
+            while (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
+                string? username, email, passwordQuestion, comment;
+                bool isApproved;
+                DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
+                Guid userId;
+                bool isLockedOut;
+                DateTime dtLastLockoutDate;
 
-                SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                {
-                    Direction = ParameterDirection.ReturnValue
-                };
+                username = GetNullableString(reader, 0);
+                email = GetNullableString(reader, 1);
+                passwordQuestion = GetNullableString(reader, 2);
+                comment = GetNullableString(reader, 3);
+                isApproved = reader.GetBoolean(4);
+                dtCreate = reader.GetDateTime(5).ToLocalTime();
+                dtLastLogin = reader.GetDateTime(6).ToLocalTime();
+                dtLastActivity = reader.GetDateTime(7).ToLocalTime();
+                dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
+                userId = reader.GetGuid(9);
+                isLockedOut = reader.GetBoolean(10);
+                dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
 
-                try
-                {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_FindUsersByEmail", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@EmailToMatch", SqlDbType.NVarChar, emailToMatch));
-                    cmd.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
-                    cmd.Parameters.Add(CreateInputParam("@PageSize", SqlDbType.Int, pageSize));
-                    cmd.Parameters.Add(p);
-
-                    try
-                    {
-                        using SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-                        while (await reader.ReadAsync())
-                        {
-                            string? username, email, passwordQuestion, comment;
-                            bool isApproved;
-                            DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
-                            Guid userId;
-                            bool isLockedOut;
-                            DateTime dtLastLockoutDate;
-
-                            username = GetNullableString(reader, 0);
-                            email = GetNullableString(reader, 1);
-                            passwordQuestion = GetNullableString(reader, 2);
-                            comment = GetNullableString(reader, 3);
-                            isApproved = reader.GetBoolean(4);
-                            dtCreate = reader.GetDateTime(5).ToLocalTime();
-                            dtLastLogin = reader.GetDateTime(6).ToLocalTime();
-                            dtLastActivity = reader.GetDateTime(7).ToLocalTime();
-                            dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
-                            userId = reader.GetGuid(9);
-                            isLockedOut = reader.GetBoolean(10);
-                            dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
-
-                            users.Add(new MembershipUser(
-                                providerName: _settings.ApplicationName,
-                                userName: username,
-                                providerUserKey: userId,
-                                email: email,
-                                passwordQuestion: passwordQuestion,
-                                comment: comment,
-                                isApproved: isApproved,
-                                isLockedOut: isLockedOut,
-                                creationDate: dtCreate,
-                                lastLoginDate: dtLastLogin,
-                                lastActivityDate: dtLastActivity,
-                                lastPasswordChangedDate: dtLastPassChange,
-                                lastLockoutDate: dtLastLockoutDate));
-                        }
-                    }
-                    finally
-                    {
-                        if (p.Value != null && p.Value is int)
-                        {
-                            totalRecords = (int)p.Value;
-                        }
-                    }
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                users.Add(new MembershipUser(
+                    providerName: _settings.ApplicationName,
+                    userName: username,
+                    providerUserKey: userId,
+                    email: email,
+                    passwordQuestion: passwordQuestion,
+                    comment: comment,
+                    isApproved: isApproved,
+                    isLockedOut: isLockedOut,
+                    creationDate: dtCreate,
+                    lastLoginDate: dtLastLogin,
+                    lastActivityDate: dtLastActivity,
+                    lastPasswordChangedDate: dtLastPassChange,
+                    lastLockoutDate: dtLastLockoutDate));
             }
-            catch
+
+            if (returnParameter?.Value is not null and int)
             {
-                throw;
+                totalRecords = (int)returnParameter.Value;
             }
 
             return new MembershipUserCollection(users, totalRecords);
@@ -367,275 +274,172 @@ namespace SqlMembershipAdapter
 
         public async Task<bool> ChangePassword(string username, string newPassword, string? passwordSalt, int passwordFormat)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_SetPassword", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@NewPassword", SqlDbType.NVarChar, newPassword));
+            command.Parameters.Add(CreateInputParam("@PasswordSalt", SqlDbType.NVarChar, passwordSalt));
+            command.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, passwordFormat));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            if (status != 0)
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-                int status;
+                string errText = GetExceptionText(status);
 
-                try
+                if (IsStatusDueToBadPassword(status))
                 {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_SetPassword", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@NewPassword", SqlDbType.NVarChar, newPassword));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordSalt", SqlDbType.NVarChar, passwordSalt));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, passwordFormat));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    await cmd.ExecuteNonQueryAsync();
-
-                    status = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    if (status != 0)
-                    {
-                        string errText = GetExceptionText(status);
-
-                        if (IsStatusDueToBadPassword(status))
-                        {
-                            throw new MembershipPasswordException(errText);
-                        }
-                        else
-                        {
-                            throw new ProviderException(errText);
-                        }
-                    }
-
-                    return true;
+                    throw new MembershipPasswordException(errText);
                 }
-                finally
+                else
                 {
-                    await connection.CloseAsync();
+                    throw new ProviderException(errText);
                 }
             }
-            catch
-            {
-                throw;
-            }
+
+            return true;
         }
 
         public async Task UpdateUser(MembershipUser user)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_UpdateUser", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, user.UserName));
+            command.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, user.Email));
+            command.Parameters.Add(CreateInputParam("@Comment", SqlDbType.NText, user.Comment));
+            command.Parameters.Add(CreateInputParam("@IsApproved", SqlDbType.Bit, user.IsApproved ? 1 : 0));
+            command.Parameters.Add(CreateInputParam("@LastLoginDate", SqlDbType.DateTime, user.LastLoginDate.ToUniversalTime()));
+            command.Parameters.Add(CreateInputParam("@LastActivityDate", SqlDbType.DateTime, user.LastActivityDate.ToUniversalTime()));
+            command.Parameters.Add(CreateInputParam("@UniqueEmail", SqlDbType.Int, _settings.RequiresUniqueEmail ? 1 : 0));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            if (status != 0)
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-
-                try
-                {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_UpdateUser", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, user.UserName));
-                    cmd.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, user.Email));
-                    cmd.Parameters.Add(CreateInputParam("@Comment", SqlDbType.NText, user.Comment));
-                    cmd.Parameters.Add(CreateInputParam("@IsApproved", SqlDbType.Bit, user.IsApproved ? 1 : 0));
-                    cmd.Parameters.Add(CreateInputParam("@LastLoginDate", SqlDbType.DateTime, user.LastLoginDate.ToUniversalTime()));
-                    cmd.Parameters.Add(CreateInputParam("@LastActivityDate", SqlDbType.DateTime, user.LastActivityDate.ToUniversalTime()));
-                    cmd.Parameters.Add(CreateInputParam("@UniqueEmail", SqlDbType.Int, _settings.RequiresUniqueEmail ? 1 : 0));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-                    await cmd.ExecuteNonQueryAsync();
-
-                    int status = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    if (status != 0)
-                    {
-                        throw new ProviderException(GetExceptionText(status));
-                    }
-
-                    return;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
-            }
-            catch
-            {
-                throw;
+                throw new ProviderException(GetExceptionText(status));
             }
         }
 
         public async Task<bool> UnlockUser(string userName)
         {
-            try
-            {
-                SqlConnection connection = new(_settings.ConnectionString);
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_UnlockUser", connection);
 
-                try
-                {
-                    await connection.OpenAsync();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
 
-                    SqlCommand cmd = new("dbo.aspnet_Membership_UnlockUser", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, userName));
 
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, userName));
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
 
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
 
-                    cmd.Parameters.Add(p);
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
 
-                    await cmd.ExecuteNonQueryAsync();
-
-                    int status = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    return status == 0;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
-            }
-            catch
-            {
-                throw;
-            }
+            return status == 0;
         }
 
         public async Task<MembershipUser?> GetUser(string username, bool updateLastActivity)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_GetUserByName", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@UpdateLastActivity", SqlDbType.Bit, updateLastActivity));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-                try
-                {
-                    await connection.OpenAsync();
+                string? email = GetNullableString(reader, 0);
+                string? passwordQuestion = GetNullableString(reader, 1);
+                string? comment = GetNullableString(reader, 2);
+                bool isApproved = reader.GetBoolean(3);
+                DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
+                DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
+                DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
+                DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
+                Guid userId = reader.GetGuid(8);
+                bool isLockedOut = reader.GetBoolean(9);
+                DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
 
-                    SqlCommand cmd = new("dbo.aspnet_Membership_GetUserByName", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@UpdateLastActivity", SqlDbType.Bit, updateLastActivity));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    using SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                    if (await reader.ReadAsync())
-                    {
-                        string? email = GetNullableString(reader, 0);
-                        string? passwordQuestion = GetNullableString(reader, 1);
-                        string? comment = GetNullableString(reader, 2);
-                        bool isApproved = reader.GetBoolean(3);
-                        DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
-                        DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
-                        DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
-                        DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
-                        Guid userId = reader.GetGuid(8);
-                        bool isLockedOut = reader.GetBoolean(9);
-                        DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
-
-                        return new MembershipUser(
-                            providerName: _settings.ApplicationName,
-                            userName: username,
-                            providerUserKey: userId,
-                            email: email,
-                            passwordQuestion: passwordQuestion,
-                            comment: comment,
-                            isApproved: isApproved,
-                            isLockedOut: isLockedOut,
-                            creationDate: dtCreate,
-                            lastLoginDate: dtLastLogin,
-                            lastActivityDate: dtLastActivity,
-                            lastPasswordChangedDate: dtLastPassChange,
-                            lastLockoutDate: dtLastLockoutDate);
-                    }
-
-                    return null;
-
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                return new MembershipUser(
+                    providerName: _settings.ApplicationName,
+                    userName: username,
+                    providerUserKey: userId,
+                    email: email,
+                    passwordQuestion: passwordQuestion,
+                    comment: comment,
+                    isApproved: isApproved,
+                    isLockedOut: isLockedOut,
+                    creationDate: dtCreate,
+                    lastLoginDate: dtLastLogin,
+                    lastActivityDate: dtLastActivity,
+                    lastPasswordChangedDate: dtLastPassChange,
+                    lastLockoutDate: dtLastLockoutDate);
             }
-            catch
-            {
-                throw;
-            }
+
+            return null;
         }
 
         public async Task<int> GetNumberOfUsersOnline(int timeWindowMinutes)
         {
-            try
-            {
-                SqlConnection connection = new(_settings.ConnectionString);
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_GetNumberOfUsersOnline", connection);
 
-                try
-                {
-                    await connection.OpenAsync();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
 
-                    SqlCommand cmd = new("dbo.aspnet_Membership_GetNumberOfUsersOnline", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@MinutesSinceLastInActive", SqlDbType.Int, timeWindowMinutes));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
 
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@MinutesSinceLastInActive", SqlDbType.Int, timeWindowMinutes));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
 
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
 
-                    cmd.Parameters.Add(p);
-                    await cmd.ExecuteNonQueryAsync();
-                    int num = (p.Value != null) ? ((int)p.Value) : -1;
-                    return num;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
-            }
-            catch
-            {
-                throw;
-            }
+            int onlineCount = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            return onlineCount;
         }
 
         public async Task<MembershipUserCollection> GetAllUsers(int pageIndex, int pageSize)
@@ -643,89 +447,64 @@ namespace SqlMembershipAdapter
             List<MembershipUser> users = [];
             int totalRecords = 0;
 
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_GetAllUsers", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
+            command.Parameters.Add(CreateInputParam("@PageSize", SqlDbType.Int, pageSize));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+
+            while (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
+                string? username, email, passwordQuestion, comment;
+                bool isApproved;
+                DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
+                Guid userId;
+                bool isLockedOut;
+                DateTime dtLastLockoutDate;
 
-                try
-                {
-                    await connection.OpenAsync();
+                username = GetNullableString(reader, 0);
+                email = GetNullableString(reader, 1);
+                passwordQuestion = GetNullableString(reader, 2);
+                comment = GetNullableString(reader, 3);
+                isApproved = reader.GetBoolean(4);
+                dtCreate = reader.GetDateTime(5).ToLocalTime();
+                dtLastLogin = reader.GetDateTime(6).ToLocalTime();
+                dtLastActivity = reader.GetDateTime(7).ToLocalTime();
+                dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
+                userId = reader.GetGuid(9);
+                isLockedOut = reader.GetBoolean(10);
+                dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
 
-                    SqlCommand cmd = new("dbo.aspnet_Membership_GetAllUsers", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
-                    cmd.Parameters.Add(CreateInputParam("@PageSize", SqlDbType.Int, pageSize));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    try
-                    {
-                        using SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-                        while (await reader.ReadAsync())
-                        {
-                            string? username, email, passwordQuestion, comment;
-                            bool isApproved;
-                            DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
-                            Guid userId;
-                            bool isLockedOut;
-                            DateTime dtLastLockoutDate;
-
-                            username = GetNullableString(reader, 0);
-                            email = GetNullableString(reader, 1);
-                            passwordQuestion = GetNullableString(reader, 2);
-                            comment = GetNullableString(reader, 3);
-                            isApproved = reader.GetBoolean(4);
-                            dtCreate = reader.GetDateTime(5).ToLocalTime();
-                            dtLastLogin = reader.GetDateTime(6).ToLocalTime();
-                            dtLastActivity = reader.GetDateTime(7).ToLocalTime();
-                            dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
-                            userId = reader.GetGuid(9);
-                            isLockedOut = reader.GetBoolean(10);
-                            dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
-
-                            users.Add(new MembershipUser(
-                                providerName: _settings.ApplicationName,
-                                userName: username,
-                                providerUserKey: userId,
-                                email: email,
-                                passwordQuestion: passwordQuestion,
-                                comment: comment,
-                                isApproved: isApproved,
-                                isLockedOut: isLockedOut,
-                                creationDate: dtCreate,
-                                lastLoginDate: dtLastLogin,
-                                lastActivityDate: dtLastActivity,
-                                lastPasswordChangedDate: dtLastPassChange,
-                                lastLockoutDate: dtLastLockoutDate));
-                        }
-                    }
-                    finally
-                    {
-                        if (p.Value is not null and int)
-                        {
-                            totalRecords = (int)p.Value;
-                        }
-                    }
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                users.Add(new MembershipUser(
+                    providerName: _settings.ApplicationName,
+                    userName: username,
+                    providerUserKey: userId,
+                    email: email,
+                    passwordQuestion: passwordQuestion,
+                    comment: comment,
+                    isApproved: isApproved,
+                    isLockedOut: isLockedOut,
+                    creationDate: dtCreate,
+                    lastLoginDate: dtLastLogin,
+                    lastActivityDate: dtLastActivity,
+                    lastPasswordChangedDate: dtLastPassChange,
+                    lastLockoutDate: dtLastLockoutDate));
             }
-            catch
+
+            if (returnParameter?.Value is not null and int)
             {
-                throw;
+                totalRecords = (int)returnParameter.Value;
             }
 
             return new MembershipUserCollection(users, totalRecords);
@@ -733,366 +512,246 @@ namespace SqlMembershipAdapter
 
         public async Task<bool> DeleteUser(string username, bool deleteAllRelatedData)
         {
-            try
-            {
-                SqlConnection connection = new(_settings.ConnectionString);
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Users_DeleteUser", connection);
 
-                try
-                {
-                    await connection.OpenAsync();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
 
-                    SqlCommand cmd = new("dbo.aspnet_Users_DeleteUser", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@TablesToDeleteFrom", SqlDbType.Int, deleteAllRelatedData ? 0xF : 1));
 
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@TablesToDeleteFrom", SqlDbType.Int, deleteAllRelatedData ? 0xF : 1));
+            SqlParameter returnParameter = command.Parameters.Add("@NumTablesDeletedFrom", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.Output;
 
-                    SqlParameter p = new("@NumTablesDeletedFrom", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.Output
-                    };
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
 
-                    cmd.Parameters.Add(p);
-                    await cmd.ExecuteNonQueryAsync();
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
 
-                    int status = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    return status > 0;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
-            }
-            catch
-            {
-                throw;
-            }
+            return status > 0;
         }
 
         public async Task<string?> GetUsernameByEmail(string? email)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_GetUserByEmail", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, email));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            string? username = null;
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+
+            if (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
+                username = GetNullableString(reader, 0);
 
-                try
+                if (_settings.RequiresUniqueEmail && await reader.ReadAsync())
                 {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_GetUserByEmail", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, email));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    string? username = null;
-
-                    using SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-                    if (await reader.ReadAsync())
-                    {
-                        username = GetNullableString(reader, 0);
-
-                        if (_settings.RequiresUniqueEmail && await reader.ReadAsync())
-                        {
-                            throw new ProviderException("More than one user has the specified e-mail address.");
-                        }
-                    }
-
-                    return username;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
+                    throw new ProviderException("More than one user has the specified e-mail address.");
                 }
             }
-            catch
-            {
-                throw;
-            }
+
+            return username;
         }
 
         public async Task<MembershipUser?> GetUser(Guid providerUserKey, bool userIsOnline)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_GetUserByUserId", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey));
+            command.Parameters.Add(CreateInputParam("@UpdateLastActivity", SqlDbType.Bit, userIsOnline));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
+                string? email = GetNullableString(reader, 0);
+                string? passwordQuestion = GetNullableString(reader, 1);
+                string? comment = GetNullableString(reader, 2);
+                bool isApproved = reader.GetBoolean(3);
+                DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
+                DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
+                DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
+                DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
+                string? userName = GetNullableString(reader, 8);
+                bool isLockedOut = reader.GetBoolean(9);
+                DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
 
-                try
-                {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_GetUserByUserId", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey));
-                    cmd.Parameters.Add(CreateInputParam("@UpdateLastActivity", SqlDbType.Bit, userIsOnline));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    using SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                    if (await reader.ReadAsync())
-                    {
-                        string? email = GetNullableString(reader, 0);
-                        string? passwordQuestion = GetNullableString(reader, 1);
-                        string? comment = GetNullableString(reader, 2);
-                        bool isApproved = reader.GetBoolean(3);
-                        DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
-                        DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
-                        DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
-                        DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
-                        string? userName = GetNullableString(reader, 8);
-                        bool isLockedOut = reader.GetBoolean(9);
-                        DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
-
-                        return new MembershipUser(
-                            providerName: _settings.ApplicationName,
-                            userName: userName,
-                            providerUserKey: providerUserKey,
-                            email: email,
-                            passwordQuestion: passwordQuestion,
-                            comment: comment,
-                            isApproved: isApproved,
-                            isLockedOut: isLockedOut,
-                            creationDate: dtCreate,
-                            lastLoginDate: dtLastLogin,
-                            lastActivityDate: dtLastActivity,
-                            lastPasswordChangedDate: dtLastPassChange,
-                            lastLockoutDate: dtLastLockoutDate);
-                    }
-
-                    return null;
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                return new MembershipUser(
+                    providerName: _settings.ApplicationName,
+                    userName: userName,
+                    providerUserKey: providerUserKey,
+                    email: email,
+                    passwordQuestion: passwordQuestion,
+                    comment: comment,
+                    isApproved: isApproved,
+                    isLockedOut: isLockedOut,
+                    creationDate: dtCreate,
+                    lastLoginDate: dtLastLogin,
+                    lastActivityDate: dtLastActivity,
+                    lastPasswordChangedDate: dtLastPassChange,
+                    lastLockoutDate: dtLastLockoutDate);
             }
-            catch
-            {
-                throw;
-            }
+
+            return null;
         }
 
         public async Task ResetPassword(string username, string newPasswordEncoded, string? passwordSalt, string? passwordAnswer, int passwordFormat)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_ResetPassword", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@NewPassword", SqlDbType.NVarChar, newPasswordEncoded));
+            command.Parameters.Add(CreateInputParam("@MaxInvalidPasswordAttempts", SqlDbType.Int, _settings.MaxInvalidPasswordAttempts));
+            command.Parameters.Add(CreateInputParam("@PasswordAttemptWindow", SqlDbType.Int, _settings.PasswordAttemptWindow));
+            command.Parameters.Add(CreateInputParam("@PasswordSalt", SqlDbType.NVarChar, passwordSalt));
+            command.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, passwordFormat));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+
+            if (_settings.RequiresQuestionAndAnswer)
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-
-                try
-                {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_ResetPassword", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@NewPassword", SqlDbType.NVarChar, newPasswordEncoded));
-                    cmd.Parameters.Add(CreateInputParam("@MaxInvalidPasswordAttempts", SqlDbType.Int, _settings.MaxInvalidPasswordAttempts));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordAttemptWindow", SqlDbType.Int, _settings.PasswordAttemptWindow));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordSalt", SqlDbType.NVarChar, passwordSalt));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordFormat", SqlDbType.Int, passwordFormat));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
-
-                    if (_settings.RequiresQuestionAndAnswer)
-                    {
-                        cmd.Parameters.Add(CreateInputParam("@PasswordAnswer", SqlDbType.NVarChar, passwordAnswer));
-                    }
-
-                    SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    };
-
-                    cmd.Parameters.Add(p);
-
-                    await cmd.ExecuteNonQueryAsync();
-
-                    int status = (p.Value != null) ? ((int)p.Value) : -1;
-
-                    if (status != 0)
-                    {
-                        string errText = GetExceptionText(status);
-
-                        if (IsStatusDueToBadPassword(status))
-                        {
-                            throw new MembershipPasswordException(errText);
-                        }
-                        else
-                        {
-                            throw new ProviderException(errText);
-                        }
-                    }
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                command.Parameters.Add(CreateInputParam("@PasswordAnswer", SqlDbType.NVarChar, passwordAnswer));
             }
-            catch
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            if (status != 0)
             {
-                throw;
+                string errText = GetExceptionText(status);
+
+                if (IsStatusDueToBadPassword(status))
+                {
+                    throw new MembershipPasswordException(errText);
+                }
+                else
+                {
+                    throw new ProviderException(errText);
+                }
             }
         }
 
         public async Task<GetPasswordWithFormatResult> GetPasswordWithFormat(string username, bool updateLastLoginActivityDate)
         {
-            try
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_GetPasswordWithFormat", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@UpdateLastLoginActivityDate", SqlDbType.Bit, updateLastLoginActivityDate));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
+
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
+
+            await connection.OpenAsync();
+
+            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow);
+
+            int passwordFormat = 0;
+            string? password = null;
+            string? passwordSalt = null;
+            int failedPasswordAttemptCount = 0;
+            int failedPasswordAnswerAttemptCount = 0;
+            bool isApproved = false;
+            DateTime lastLoginDate = DateTime.UtcNow;
+            DateTime lastActivityDate = DateTime.UtcNow;
+
+            if (await reader.ReadAsync())
             {
-                SqlConnection connection = new(_settings.ConnectionString);
-
-                SqlParameter p = new("@ReturnValue", SqlDbType.Int)
-                {
-                    Direction = ParameterDirection.ReturnValue
-                };
-
-                try
-                {
-                    await connection.OpenAsync();
-
-                    SqlCommand cmd = new("dbo.aspnet_Membership_GetPasswordWithFormat", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@UpdateLastLoginActivityDate", SqlDbType.Bit, updateLastLoginActivityDate));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, DateTime.UtcNow));
-                    cmd.Parameters.Add(p);
-
-                    using SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow);
-
-                    int status = (p?.Value != null) ? ((int)p.Value) : -1;
-
-                    if (status != 0)
-                    {
-                        string exceptionText = GetExceptionText(status);
-
-                        throw (status is (>= 2 and <= 6) or 99)
-                            ? new MembershipPasswordException(exceptionText) : new ProviderException(exceptionText);
-                    }
-
-                    int passwordFormat = 0;
-                    string? password = null;
-                    string? passwordSalt = null;
-                    int failedPasswordAttemptCount = 0;
-                    int failedPasswordAnswerAttemptCount = 0;
-                    bool isApproved = false;
-                    DateTime lastLoginDate = DateTime.UtcNow;
-                    DateTime lastActivityDate = DateTime.UtcNow;
-
-                    if (await reader.ReadAsync())
-                    {
-                        password = reader.GetString(0);
-                        passwordFormat = reader.GetInt32(1);
-                        passwordSalt = reader.GetString(2);
-                        failedPasswordAttemptCount = reader.GetInt32(3);
-                        failedPasswordAnswerAttemptCount = reader.GetInt32(4);
-                        isApproved = reader.GetBoolean(5);
-                        lastLoginDate = reader.GetDateTime(6);
-                        lastActivityDate = reader.GetDateTime(7);
-                    }
-
-                    return new GetPasswordWithFormatResult()
-                    {
-                        Password = password,
-                        PasswordFormat = passwordFormat,
-                        PasswordSalt = passwordSalt,
-                        FailedPasswordAttemptCount = failedPasswordAttemptCount,
-                        FailedPasswordAnswerAttemptCount = failedPasswordAnswerAttemptCount,
-                        IsApproved = isApproved,
-                        LastLoginDate = lastLoginDate,
-                        LastActivityDate = lastActivityDate,
-                        IsRetrieved = status == 0
-                    };
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+                password = reader.GetString(0);
+                passwordFormat = reader.GetInt32(1);
+                passwordSalt = reader.GetString(2);
+                failedPasswordAttemptCount = reader.GetInt32(3);
+                failedPasswordAnswerAttemptCount = reader.GetInt32(4);
+                isApproved = reader.GetBoolean(5);
+                lastLoginDate = reader.GetDateTime(6);
+                lastActivityDate = reader.GetDateTime(7);
             }
-            catch
+
+            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+
+            if (status != 0)
             {
-                throw;
+                string exceptionText = GetExceptionText(status);
+
+                throw (status is (>= 2 and <= 6) or 99)
+                    ? new MembershipPasswordException(exceptionText) : new ProviderException(exceptionText);
             }
+
+            return new GetPasswordWithFormatResult()
+            {
+                Password = password,
+                PasswordFormat = passwordFormat,
+                PasswordSalt = passwordSalt,
+                FailedPasswordAttemptCount = failedPasswordAttemptCount,
+                FailedPasswordAnswerAttemptCount = failedPasswordAnswerAttemptCount,
+                IsApproved = isApproved,
+                LastLoginDate = lastLoginDate,
+                LastActivityDate = lastActivityDate
+            };
         }
 
         public async Task CheckPassword(string username, bool isPasswordCorrect, bool updateLastLoginActivityDate, DateTime lastLoginDate, DateTime lastActivityDate)
         {
-            try
-            {
-                SqlConnection connection = new(_settings.ConnectionString);
+            DateTime utcNow = DateTime.UtcNow;
 
-                try
-                {
-                    await connection.OpenAsync();
+            using SqlConnection connection = new(_settings.ConnectionString);
+            using SqlCommand command = new("dbo.aspnet_Membership_UpdateUserInfo", connection);
 
-                    DateTime dtNow = DateTime.UtcNow;
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandTimeout = _settings.CommandTimeoutSeconds;
 
-                    SqlCommand cmd = new("dbo.aspnet_Membership_UpdateUserInfo", connection)
-                    {
-                        CommandTimeout = _settings.CommandTimeoutSeconds,
-                        CommandType = CommandType.StoredProcedure
-                    };
+            command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
+            command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
+            command.Parameters.Add(CreateInputParam("@IsPasswordCorrect", SqlDbType.Bit, isPasswordCorrect));
+            command.Parameters.Add(CreateInputParam("@UpdateLastLoginActivityDate", SqlDbType.Bit, updateLastLoginActivityDate));
+            command.Parameters.Add(CreateInputParam("@MaxInvalidPasswordAttempts", SqlDbType.Int, _settings.MaxInvalidPasswordAttempts));
+            command.Parameters.Add(CreateInputParam("@PasswordAttemptWindow", SqlDbType.Int, _settings.PasswordAttemptWindow));
+            command.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, utcNow));
+            command.Parameters.Add(CreateInputParam("@LastLoginDate", SqlDbType.DateTime, isPasswordCorrect ? utcNow : lastLoginDate));
+            command.Parameters.Add(CreateInputParam("@LastActivityDate", SqlDbType.DateTime, isPasswordCorrect ? utcNow : lastActivityDate));
 
-                    cmd.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
-                    cmd.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
-                    cmd.Parameters.Add(CreateInputParam("@IsPasswordCorrect", SqlDbType.Bit, isPasswordCorrect));
-                    cmd.Parameters.Add(CreateInputParam("@UpdateLastLoginActivityDate", SqlDbType.Bit, updateLastLoginActivityDate));
-                    cmd.Parameters.Add(CreateInputParam("@MaxInvalidPasswordAttempts", SqlDbType.Int, _settings.MaxInvalidPasswordAttempts));
-                    cmd.Parameters.Add(CreateInputParam("@PasswordAttemptWindow", SqlDbType.Int, _settings.PasswordAttemptWindow));
-                    cmd.Parameters.Add(CreateInputParam("@CurrentTimeUtc", SqlDbType.DateTime, dtNow));
-                    cmd.Parameters.Add(CreateInputParam("@LastLoginDate", SqlDbType.DateTime, isPasswordCorrect ? dtNow : lastLoginDate));
-                    cmd.Parameters.Add(CreateInputParam("@LastActivityDate", SqlDbType.DateTime, isPasswordCorrect ? dtNow : lastActivityDate));
-                    
-                    cmd.Parameters.Add(new("@ReturnValue", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.ReturnValue
-                    });
+            SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+            returnParameter.Direction = ParameterDirection.ReturnValue;
 
-                    await cmd.ExecuteNonQueryAsync();
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
-            }
-            catch
-            {
-                throw;
-            }
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
         }
 
         private static SqlParameter CreateInputParam(string? paramName, SqlDbType dbType, object? objValue)

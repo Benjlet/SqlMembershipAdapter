@@ -14,7 +14,7 @@
         private readonly bool _isApproved;
 
         /// <summary>
-        /// Username.
+        /// Username; this is often the same as the email.
         /// </summary>
         public string? Username => _username;
 

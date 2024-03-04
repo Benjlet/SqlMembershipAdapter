@@ -2,7 +2,6 @@
 {
     internal class GetPasswordWithFormatResult
     {
-        public bool IsRetrieved { get; set; }
         public string? Password { get; set; }
         public int PasswordFormat { get; set; }
         public string? PasswordSalt { get; set; }
