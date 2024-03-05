@@ -10,5 +10,6 @@
         public bool IsApproved { get; set; }
         public DateTime LastLoginDate { get; set; }
         public DateTime LastActivityDate { get; set; }
+        public int StatusCode { get; set; }
     }
 }

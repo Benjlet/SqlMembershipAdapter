@@ -52,7 +52,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockStore.Setup(x => x.GetUsernameByEmail(It.IsAny<string>())).ReturnsAsync(matchedUsername);
 
-            var username = await _sut.GetUserNameByEmail("email");
+            string? username = await _sut.GetUserNameByEmail("email");
 
             Assert.That(username, Is.EqualTo(matchedUsername));
         }

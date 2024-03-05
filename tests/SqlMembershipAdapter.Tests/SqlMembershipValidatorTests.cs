@@ -93,7 +93,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.MinRequiredPasswordLength).Returns(12);
 
-            var isValid = _sut.ValidatePassword("hunter2");
+            bool isValid = _sut.ValidatePassword("hunter2");
 
             Assert.That(isValid, Is.False);
         }
@@ -101,63 +101,63 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidatePassword_Valid_ReturnsTrue()
         {
-            var isValid = _sut.ValidatePassword("hunter2");
+            bool isValid = _sut.ValidatePassword("hunter2");
             Assert.That(isValid, Is.True);
         }
 
         [Test]
         public void ValidatePageRange_IndexLessThanZero_ReturnsFalse()
         {
-            var isValid = _sut.ValidatePageRange(-1, 3);
+            bool isValid = _sut.ValidatePageRange(-1, 3);
             Assert.That(isValid, Is.False);
         }
 
         [Test]
         public void ValidatePageRange_SizeLessThanOne_ReturnsFalse()
         {
-            var isValid = _sut.ValidatePageRange(3, 0);
+            bool isValid = _sut.ValidatePageRange(3, 0);
             Assert.That(isValid, Is.False);
         }
 
         [Test]
         public void ValidatePageRange_UpperBoundGreatThanMaxInt_ReturnsFalse()
         {
-            var isValid = _sut.ValidatePageRange(int.MaxValue, int.MaxValue);
+            bool isValid = _sut.ValidatePageRange(int.MaxValue, int.MaxValue);
             Assert.That(isValid, Is.False);
         }
 
         [Test]
         public void ValidatePageRange_IsValid_ReturnsTrue()
         {
-            var isValid = _sut.ValidatePageRange(3, 5);
+            bool isValid = _sut.ValidatePageRange(3, 5);
             Assert.That(isValid, Is.True);
         }
 
         [Test]
         public void ValidatePasswordComplexity_Null_ReturnsFalse()
         {
-            var isValid = _sut.ValidatePasswordComplexity(null);
+            bool isValid = _sut.ValidatePasswordComplexity(null);
             Assert.That(isValid, Is.False);
         }
 
         [Test]
         public void ValidatePasswordComplexity_Empty_ReturnsFalse()
         {
-            var isValid = _sut.ValidatePasswordComplexity(string.Empty);
+            bool isValid = _sut.ValidatePasswordComplexity(string.Empty);
             Assert.That(isValid, Is.False);
         }
 
         [Test]
         public void ValidatePasswordComplexity_Whitespace_ReturnsFalse()
         {
-            var isValid = _sut.ValidatePasswordComplexity("    ");
+            bool isValid = _sut.ValidatePasswordComplexity("    ");
             Assert.That(isValid, Is.False);
         }
 
         [Test]
         public void ValidatePasswordComplexity_NoRegularExpression_ReturnsTrue()
         {
-            var isValid = _sut.ValidatePasswordComplexity("hunter2");
+            bool isValid = _sut.ValidatePasswordComplexity("hunter2");
             Assert.That(isValid, Is.True);
         }
 
@@ -168,7 +168,7 @@ namespace SqlMembershipAdapter.Tests
             
             _mockSettings.SetupGet(x => x.PasswordStrengthRegularExpression).Returns(eightCharactersOneLetterAndNumberRegex);
 
-            var isValid = _sut.ValidatePasswordComplexity("hunter2");
+            bool isValid = _sut.ValidatePasswordComplexity("hunter2");
 
             Assert.That(isValid, Is.False);
         }
@@ -181,7 +181,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.PasswordStrengthRegularExpression).Returns(threeCharactersOneLetterAndNumberRegex);
             _mockSettings.SetupGet(x => x.PasswordStrengthRegexTimeoutMilliseconds).Returns(5000);
 
-            var isValid = _sut.ValidatePasswordComplexity("hunter2");
+            bool isValid = _sut.ValidatePasswordComplexity("hunter2");
 
             _mockSettings.Verify(x => x.PasswordStrengthRegexTimeoutMilliseconds, Times.Exactly(2));
 
@@ -193,7 +193,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordQuestion(null);
+            bool isValid = _sut.ValidatePasswordQuestion(null);
 
             Assert.That(isValid, Is.False);
         }
@@ -203,7 +203,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordQuestion(string.Empty);
+            bool isValid = _sut.ValidatePasswordQuestion(string.Empty);
 
             Assert.That(isValid, Is.False);
         }
@@ -213,7 +213,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordQuestion("     ");
+            bool isValid = _sut.ValidatePasswordQuestion("     ");
 
             Assert.That(isValid, Is.False);
         }
@@ -223,7 +223,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordQuestion(new string('A', 400));
+            bool isValid = _sut.ValidatePasswordQuestion(new string('A', 400));
 
             Assert.That(isValid, Is.False);
         }
@@ -231,21 +231,21 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidatePasswordQuestion_Valid_Required_ReturnsTrue()
         {
-            var isValid = _sut.ValidatePasswordQuestion("What is the airspeed velocity of an unladen swallow?");
+            bool isValid = _sut.ValidatePasswordQuestion("What is the airspeed velocity of an unladen swallow?");
             Assert.That(isValid, Is.True);
         }
 
         [Test]
         public void ValidatePasswordAnswer_Null_NotRequired_ReturnsTrue()
         {
-            var isValid = _sut.ValidatePasswordAnswer(null);
+            bool isValid = _sut.ValidatePasswordAnswer(null);
             Assert.That(isValid, Is.True);
         }
 
         [Test]
         public void ValidatePasswordAnswer_Empty_NotRequired_ReturnsTrue()
         {
-            var isValid = _sut.ValidatePasswordAnswer(string.Empty);
+            bool isValid = _sut.ValidatePasswordAnswer(string.Empty);
             Assert.That(isValid, Is.True);
         }
 
@@ -254,7 +254,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordAnswer(null);
+            bool isValid = _sut.ValidatePasswordAnswer(null);
 
             Assert.That(isValid, Is.False);
         }
@@ -264,7 +264,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordAnswer(new string('A', 400));
+            bool isValid = _sut.ValidatePasswordAnswer(new string('A', 400));
 
             Assert.That(isValid, Is.False);
         }
@@ -274,7 +274,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidatePasswordAnswer("an African or European swallow?");
+            bool isValid = _sut.ValidatePasswordAnswer("an African or European swallow?");
 
             Assert.That(isValid, Is.True);
         }
@@ -284,7 +284,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
 
-            var isValid = _sut.ValidateEmail(null);
+            bool isValid = _sut.ValidateEmail(null);
 
             Assert.That(isValid, Is.False);
         }
@@ -292,7 +292,7 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidateEmail_NotRequired_Null_ReturnsTrue()
         {
-            var isValid = _sut.ValidateEmail(null);
+            bool isValid = _sut.ValidateEmail(null);
 
             Assert.That(isValid, Is.True);
         }
@@ -302,7 +302,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
 
-            var isValid = _sut.ValidateEmail("example@email.com");
+            bool isValid = _sut.ValidateEmail("example@email.com");
 
             Assert.That(isValid, Is.True);
         }
@@ -312,7 +312,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
 
-            var isValid = _sut.ValidateEmail(string.Empty);
+            bool isValid = _sut.ValidateEmail(string.Empty);
 
             Assert.That(isValid, Is.False);
         }
@@ -320,7 +320,7 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidateEmail_NotRequired_Empty_ReturnsTrue()
         {
-            var isValid = _sut.ValidateEmail(string.Empty);
+            bool isValid = _sut.ValidateEmail(string.Empty);
 
             Assert.That(isValid, Is.True);
         }
@@ -330,7 +330,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
 
-            var isValid = _sut.ValidateEmail(new string('A', 400));
+            bool isValid = _sut.ValidateEmail(new string('A', 400));
 
             Assert.That(isValid, Is.False);
         }
@@ -341,7 +341,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
+            bool isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
                 username: "",
                 password: "hunter2",
                 newPasswordQuestion: "What is the airspeed velocity of an unladen swallow?",
@@ -360,7 +360,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
+            bool isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
                 username: "username",
                 password: "",
                 newPasswordQuestion: "What is the airspeed velocity of an unladen swallow?",
@@ -379,7 +379,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
+            bool isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
                 username: "username",
                 password: "hunter2",
                 newPasswordQuestion: "",
@@ -398,7 +398,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
+            bool isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
                 username: "username",
                 password: "hunter2",
                 newPasswordQuestion: "What is the airspeed velocity of an unladen swallow?",
@@ -417,7 +417,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
+            bool isValid = _sut.ValidateChangePasswordQuestionAnswer(new ChangePasswordQuestionAndAnswerRequest(
                 username: "username",
                 password: "hunter2",
                 newPasswordQuestion: "What is the airspeed velocity of an unladen swallow?",
@@ -429,7 +429,7 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidateChangePasswordRequest_InvalidUsername_ReturnsFalse()
         {
-            var isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
+            bool isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
                 username: "",
                 oldPassword: "hunter2",
                 newPassword: "hunter3"), out string? invalidParam);
@@ -444,7 +444,7 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidateChangePasswordRequest_InvalidNewPassword_ReturnsFalse()
         {
-            var isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
+            bool isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
                 username: "username",
                 oldPassword: "hunter2",
                 newPassword: ""), out string? invalidParam);
@@ -459,7 +459,7 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidateChangePasswordRequest_InvalidOldPassword_ReturnsFalse()
         {
-            var isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
+            bool isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
                 username: "username",
                 oldPassword: "",
                 newPassword: "hunter3"), out string? invalidParam);
@@ -474,7 +474,7 @@ namespace SqlMembershipAdapter.Tests
         [Test]
         public void ValidateChangePasswordRequest_Valid_ReturnsTrue()
         {
-            var isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
+            bool isValid = _sut.ValidateChangePasswordRequest(new ChangePasswordRequest(
                 username: "username",
                 oldPassword: "hunter2",
                 newPassword: "hunter3"), out string? invalidParam);
@@ -488,7 +488,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "username",
                 password: "hunter2",
                 email: "email@example.com",
@@ -510,7 +510,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "username",
                 password: "",
                 email: "email@example.com",
@@ -532,7 +532,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "username",
                 password: "hunter2",
                 email: "email@example.com",
@@ -554,7 +554,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "",
                 password: "hunter2",
                 email: "email@example.com",
@@ -576,7 +576,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "username",
                 password: "hunter2",
                 email: "",
@@ -598,7 +598,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "username",
                 password: "hunter2",
                 email: "",
@@ -623,7 +623,7 @@ namespace SqlMembershipAdapter.Tests
             _mockSettings.SetupGet(x => x.RequiresUniqueEmail).Returns(true);
             _mockSettings.SetupGet(x => x.RequiresQuestionAndAnswer).Returns(true);
 
-            var isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
+            bool isValid = _sut.ValidateCreateUserRequest(new CreateUserRequest(
                 username: "username",
                 password: "hunter2",
                 email: "email@example.com",

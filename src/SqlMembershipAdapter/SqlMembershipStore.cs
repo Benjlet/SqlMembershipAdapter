@@ -2,6 +2,7 @@
 using System.Data.SqlClient;
 using SqlMembershipAdapter.Abstractions;
 using SqlMembershipAdapter.Exceptions;
+using SqlMembershipAdapter.Extensions;
 using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Result;
 
@@ -27,7 +28,7 @@ namespace SqlMembershipAdapter
             string? passwordAnswer,
             bool isApproved)
         {
-            DateTime currentTime = RoundToSeconds(DateTime.UtcNow);
+            DateTime currentTime = DateTime.UtcNow.RoundToSeconds();
 
             using SqlConnection connection = new(_settings.ConnectionString);
             using SqlCommand command = new("dbo.aspnet_Membership_CreateUser", connection);
@@ -130,7 +131,7 @@ namespace SqlMembershipAdapter
 
             if (status != 0)
             {
-                throw new ProviderException(GetExceptionText(status));
+                throw new ProviderException(status.ToProviderErrorText());
             }
         }
 
@@ -155,44 +156,45 @@ namespace SqlMembershipAdapter
 
             await connection.OpenAsync();
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-            while (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                string? username, email, passwordQuestion, comment;
-                bool isApproved;
-                DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
-                Guid userId;
-                bool isLockedOut;
-                DateTime dtLastLockoutDate;
+                while (await reader.ReadAsync())
+                {
+                    string? username, email, passwordQuestion, comment;
+                    bool isApproved;
+                    DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
+                    Guid userId;
+                    bool isLockedOut;
+                    DateTime dtLastLockoutDate;
 
-                username = GetNullableString(reader, 0);
-                email = GetNullableString(reader, 1);
-                passwordQuestion = GetNullableString(reader, 2);
-                comment = GetNullableString(reader, 3);
-                isApproved = reader.GetBoolean(4);
-                dtCreate = reader.GetDateTime(5).ToLocalTime();
-                dtLastLogin = reader.GetDateTime(6).ToLocalTime();
-                dtLastActivity = reader.GetDateTime(7).ToLocalTime();
-                dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
-                userId = reader.GetGuid(9);
-                isLockedOut = reader.GetBoolean(10);
-                dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
+                    username = GetNullableString(reader, 0);
+                    email = GetNullableString(reader, 1);
+                    passwordQuestion = GetNullableString(reader, 2);
+                    comment = GetNullableString(reader, 3);
+                    isApproved = reader.GetBoolean(4);
+                    dtCreate = reader.GetDateTime(5).ToLocalTime();
+                    dtLastLogin = reader.GetDateTime(6).ToLocalTime();
+                    dtLastActivity = reader.GetDateTime(7).ToLocalTime();
+                    dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
+                    userId = reader.GetGuid(9);
+                    isLockedOut = reader.GetBoolean(10);
+                    dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
 
-                users.Add(new MembershipUser(
-                    providerName: _settings.ApplicationName,
-                    userName: username,
-                    providerUserKey: userId,
-                    email: email,
-                    passwordQuestion: passwordQuestion,
-                    comment: comment,
-                    isApproved: isApproved,
-                    isLockedOut: isLockedOut,
-                    creationDate: dtCreate,
-                    lastLoginDate: dtLastLogin,
-                    lastActivityDate: dtLastActivity,
-                    lastPasswordChangedDate: dtLastPassChange,
-                    lastLockoutDate: dtLastLockoutDate));
+                    users.Add(new MembershipUser(
+                        providerName: _settings.ApplicationName,
+                        userName: username,
+                        providerUserKey: userId,
+                        email: email,
+                        passwordQuestion: passwordQuestion,
+                        comment: comment,
+                        isApproved: isApproved,
+                        isLockedOut: isLockedOut,
+                        creationDate: dtCreate,
+                        lastLoginDate: dtLastLogin,
+                        lastActivityDate: dtLastActivity,
+                        lastPasswordChangedDate: dtLastPassChange,
+                        lastLockoutDate: dtLastLockoutDate));
+                }
             }
 
             if (returnParameter?.Value is not null and int)
@@ -224,44 +226,45 @@ namespace SqlMembershipAdapter
 
             await connection.OpenAsync();
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-            while (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                string? username, email, passwordQuestion, comment;
-                bool isApproved;
-                DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
-                Guid userId;
-                bool isLockedOut;
-                DateTime dtLastLockoutDate;
+                while (await reader.ReadAsync())
+                {
+                    string? username, email, passwordQuestion, comment;
+                    bool isApproved;
+                    DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
+                    Guid userId;
+                    bool isLockedOut;
+                    DateTime dtLastLockoutDate;
 
-                username = GetNullableString(reader, 0);
-                email = GetNullableString(reader, 1);
-                passwordQuestion = GetNullableString(reader, 2);
-                comment = GetNullableString(reader, 3);
-                isApproved = reader.GetBoolean(4);
-                dtCreate = reader.GetDateTime(5).ToLocalTime();
-                dtLastLogin = reader.GetDateTime(6).ToLocalTime();
-                dtLastActivity = reader.GetDateTime(7).ToLocalTime();
-                dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
-                userId = reader.GetGuid(9);
-                isLockedOut = reader.GetBoolean(10);
-                dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
+                    username = GetNullableString(reader, 0);
+                    email = GetNullableString(reader, 1);
+                    passwordQuestion = GetNullableString(reader, 2);
+                    comment = GetNullableString(reader, 3);
+                    isApproved = reader.GetBoolean(4);
+                    dtCreate = reader.GetDateTime(5).ToLocalTime();
+                    dtLastLogin = reader.GetDateTime(6).ToLocalTime();
+                    dtLastActivity = reader.GetDateTime(7).ToLocalTime();
+                    dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
+                    userId = reader.GetGuid(9);
+                    isLockedOut = reader.GetBoolean(10);
+                    dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
 
-                users.Add(new MembershipUser(
-                    providerName: _settings.ApplicationName,
-                    userName: username,
-                    providerUserKey: userId,
-                    email: email,
-                    passwordQuestion: passwordQuestion,
-                    comment: comment,
-                    isApproved: isApproved,
-                    isLockedOut: isLockedOut,
-                    creationDate: dtCreate,
-                    lastLoginDate: dtLastLogin,
-                    lastActivityDate: dtLastActivity,
-                    lastPasswordChangedDate: dtLastPassChange,
-                    lastLockoutDate: dtLastLockoutDate));
+                    users.Add(new MembershipUser(
+                        providerName: _settings.ApplicationName,
+                        userName: username,
+                        providerUserKey: userId,
+                        email: email,
+                        passwordQuestion: passwordQuestion,
+                        comment: comment,
+                        isApproved: isApproved,
+                        isLockedOut: isLockedOut,
+                        creationDate: dtCreate,
+                        lastLoginDate: dtLastLogin,
+                        lastActivityDate: dtLastActivity,
+                        lastPasswordChangedDate: dtLastPassChange,
+                        lastLockoutDate: dtLastLockoutDate));
+                }
             }
 
             if (returnParameter?.Value is not null and int)
@@ -297,15 +300,15 @@ namespace SqlMembershipAdapter
 
             if (status != 0)
             {
-                string errText = GetExceptionText(status);
+                string errorText = status.ToProviderErrorText();
 
-                if (IsStatusDueToBadPassword(status))
+                if (status.IsBadPasswordStatus())
                 {
-                    throw new MembershipPasswordException(errText);
+                    throw new MembershipPasswordException(errorText);
                 }
                 else
                 {
-                    throw new ProviderException(errText);
+                    throw new ProviderException(errorText);
                 }
             }
 
@@ -340,7 +343,7 @@ namespace SqlMembershipAdapter
 
             if (status != 0)
             {
-                throw new ProviderException(GetExceptionText(status));
+                throw new ProviderException(status.ToProviderErrorText());
             }
         }
 
@@ -384,36 +387,37 @@ namespace SqlMembershipAdapter
 
             await connection.OpenAsync();
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync();
-
-            if (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync())
             {
-                string? email = GetNullableString(reader, 0);
-                string? passwordQuestion = GetNullableString(reader, 1);
-                string? comment = GetNullableString(reader, 2);
-                bool isApproved = reader.GetBoolean(3);
-                DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
-                DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
-                DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
-                DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
-                Guid userId = reader.GetGuid(8);
-                bool isLockedOut = reader.GetBoolean(9);
-                DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
+                if (await reader.ReadAsync())
+                {
+                    string? email = GetNullableString(reader, 0);
+                    string? passwordQuestion = GetNullableString(reader, 1);
+                    string? comment = GetNullableString(reader, 2);
+                    bool isApproved = reader.GetBoolean(3);
+                    DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
+                    DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
+                    DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
+                    DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
+                    Guid userId = reader.GetGuid(8);
+                    bool isLockedOut = reader.GetBoolean(9);
+                    DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
 
-                return new MembershipUser(
-                    providerName: _settings.ApplicationName,
-                    userName: username,
-                    providerUserKey: userId,
-                    email: email,
-                    passwordQuestion: passwordQuestion,
-                    comment: comment,
-                    isApproved: isApproved,
-                    isLockedOut: isLockedOut,
-                    creationDate: dtCreate,
-                    lastLoginDate: dtLastLogin,
-                    lastActivityDate: dtLastActivity,
-                    lastPasswordChangedDate: dtLastPassChange,
-                    lastLockoutDate: dtLastLockoutDate);
+                    return new MembershipUser(
+                        providerName: _settings.ApplicationName,
+                        userName: username,
+                        providerUserKey: userId,
+                        email: email,
+                        passwordQuestion: passwordQuestion,
+                        comment: comment,
+                        isApproved: isApproved,
+                        isLockedOut: isLockedOut,
+                        creationDate: dtCreate,
+                        lastLoginDate: dtLastLogin,
+                        lastActivityDate: dtLastActivity,
+                        lastPasswordChangedDate: dtLastPassChange,
+                        lastLockoutDate: dtLastLockoutDate);
+                }
             }
 
             return null;
@@ -462,44 +466,45 @@ namespace SqlMembershipAdapter
 
             await connection.OpenAsync();
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-            while (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                string? username, email, passwordQuestion, comment;
-                bool isApproved;
-                DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
-                Guid userId;
-                bool isLockedOut;
-                DateTime dtLastLockoutDate;
+                while (await reader.ReadAsync())
+                {
+                    string? username, email, passwordQuestion, comment;
+                    bool isApproved;
+                    DateTime dtCreate, dtLastLogin, dtLastActivity, dtLastPassChange;
+                    Guid userId;
+                    bool isLockedOut;
+                    DateTime dtLastLockoutDate;
 
-                username = GetNullableString(reader, 0);
-                email = GetNullableString(reader, 1);
-                passwordQuestion = GetNullableString(reader, 2);
-                comment = GetNullableString(reader, 3);
-                isApproved = reader.GetBoolean(4);
-                dtCreate = reader.GetDateTime(5).ToLocalTime();
-                dtLastLogin = reader.GetDateTime(6).ToLocalTime();
-                dtLastActivity = reader.GetDateTime(7).ToLocalTime();
-                dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
-                userId = reader.GetGuid(9);
-                isLockedOut = reader.GetBoolean(10);
-                dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
+                    username = GetNullableString(reader, 0);
+                    email = GetNullableString(reader, 1);
+                    passwordQuestion = GetNullableString(reader, 2);
+                    comment = GetNullableString(reader, 3);
+                    isApproved = reader.GetBoolean(4);
+                    dtCreate = reader.GetDateTime(5).ToLocalTime();
+                    dtLastLogin = reader.GetDateTime(6).ToLocalTime();
+                    dtLastActivity = reader.GetDateTime(7).ToLocalTime();
+                    dtLastPassChange = reader.GetDateTime(8).ToLocalTime();
+                    userId = reader.GetGuid(9);
+                    isLockedOut = reader.GetBoolean(10);
+                    dtLastLockoutDate = reader.GetDateTime(11).ToLocalTime();
 
-                users.Add(new MembershipUser(
-                    providerName: _settings.ApplicationName,
-                    userName: username,
-                    providerUserKey: userId,
-                    email: email,
-                    passwordQuestion: passwordQuestion,
-                    comment: comment,
-                    isApproved: isApproved,
-                    isLockedOut: isLockedOut,
-                    creationDate: dtCreate,
-                    lastLoginDate: dtLastLogin,
-                    lastActivityDate: dtLastActivity,
-                    lastPasswordChangedDate: dtLastPassChange,
-                    lastLockoutDate: dtLastLockoutDate));
+                    users.Add(new MembershipUser(
+                        providerName: _settings.ApplicationName,
+                        userName: username,
+                        providerUserKey: userId,
+                        email: email,
+                        passwordQuestion: passwordQuestion,
+                        comment: comment,
+                        isApproved: isApproved,
+                        isLockedOut: isLockedOut,
+                        creationDate: dtCreate,
+                        lastLoginDate: dtLastLogin,
+                        lastActivityDate: dtLastActivity,
+                        lastPasswordChangedDate: dtLastPassChange,
+                        lastLockoutDate: dtLastLockoutDate));
+                }
             }
 
             if (returnParameter?.Value is not null and int)
@@ -551,15 +556,16 @@ namespace SqlMembershipAdapter
 
             string? username = null;
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-
-            if (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                username = GetNullableString(reader, 0);
-
-                if (_settings.RequiresUniqueEmail && await reader.ReadAsync())
+                if (await reader.ReadAsync())
                 {
-                    throw new ProviderException("More than one user has the specified e-mail address.");
+                    username = GetNullableString(reader, 0);
+
+                    if (_settings.RequiresUniqueEmail && await reader.ReadAsync())
+                    {
+                        throw new ProviderException("More than one user has the specified e-mail address.");
+                    }
                 }
             }
 
@@ -583,36 +589,37 @@ namespace SqlMembershipAdapter
 
             await connection.OpenAsync();
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync();
-
-            if (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync())
             {
-                string? email = GetNullableString(reader, 0);
-                string? passwordQuestion = GetNullableString(reader, 1);
-                string? comment = GetNullableString(reader, 2);
-                bool isApproved = reader.GetBoolean(3);
-                DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
-                DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
-                DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
-                DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
-                string? userName = GetNullableString(reader, 8);
-                bool isLockedOut = reader.GetBoolean(9);
-                DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
+                if (await reader.ReadAsync())
+                {
+                    string? email = GetNullableString(reader, 0);
+                    string? passwordQuestion = GetNullableString(reader, 1);
+                    string? comment = GetNullableString(reader, 2);
+                    bool isApproved = reader.GetBoolean(3);
+                    DateTime dtCreate = reader.GetDateTime(4).ToLocalTime();
+                    DateTime dtLastLogin = reader.GetDateTime(5).ToLocalTime();
+                    DateTime dtLastActivity = reader.GetDateTime(6).ToLocalTime();
+                    DateTime dtLastPassChange = reader.GetDateTime(7).ToLocalTime();
+                    string? userName = GetNullableString(reader, 8);
+                    bool isLockedOut = reader.GetBoolean(9);
+                    DateTime dtLastLockoutDate = reader.GetDateTime(10).ToLocalTime();
 
-                return new MembershipUser(
-                    providerName: _settings.ApplicationName,
-                    userName: userName,
-                    providerUserKey: providerUserKey,
-                    email: email,
-                    passwordQuestion: passwordQuestion,
-                    comment: comment,
-                    isApproved: isApproved,
-                    isLockedOut: isLockedOut,
-                    creationDate: dtCreate,
-                    lastLoginDate: dtLastLogin,
-                    lastActivityDate: dtLastActivity,
-                    lastPasswordChangedDate: dtLastPassChange,
-                    lastLockoutDate: dtLastLockoutDate);
+                    return new MembershipUser(
+                        providerName: _settings.ApplicationName,
+                        userName: userName,
+                        providerUserKey: providerUserKey,
+                        email: email,
+                        passwordQuestion: passwordQuestion,
+                        comment: comment,
+                        isApproved: isApproved,
+                        isLockedOut: isLockedOut,
+                        creationDate: dtCreate,
+                        lastLoginDate: dtLastLogin,
+                        lastActivityDate: dtLastActivity,
+                        lastPasswordChangedDate: dtLastPassChange,
+                        lastLockoutDate: dtLastLockoutDate);
+                }
             }
 
             return null;
@@ -650,16 +657,10 @@ namespace SqlMembershipAdapter
 
             if (status != 0)
             {
-                string errText = GetExceptionText(status);
+                string errorText = status.ToProviderErrorText();
 
-                if (IsStatusDueToBadPassword(status))
-                {
-                    throw new MembershipPasswordException(errText);
-                }
-                else
-                {
-                    throw new ProviderException(errText);
-                }
+                throw status.IsBadPasswordStatus()
+                    ? new MembershipPasswordException(errorText) : new ProviderException(errorText);
             }
         }
 
@@ -681,8 +682,6 @@ namespace SqlMembershipAdapter
 
             await connection.OpenAsync();
 
-            using SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow);
-
             int passwordFormat = 0;
             string? password = null;
             string? passwordSalt = null;
@@ -692,27 +691,22 @@ namespace SqlMembershipAdapter
             DateTime lastLoginDate = DateTime.UtcNow;
             DateTime lastActivityDate = DateTime.UtcNow;
 
-            if (await reader.ReadAsync())
+            using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow))
             {
-                password = reader.GetString(0);
-                passwordFormat = reader.GetInt32(1);
-                passwordSalt = reader.GetString(2);
-                failedPasswordAttemptCount = reader.GetInt32(3);
-                failedPasswordAnswerAttemptCount = reader.GetInt32(4);
-                isApproved = reader.GetBoolean(5);
-                lastLoginDate = reader.GetDateTime(6);
-                lastActivityDate = reader.GetDateTime(7);
+                if (await reader.ReadAsync())
+                {
+                    password = reader.GetString(0);
+                    passwordFormat = reader.GetInt32(1);
+                    passwordSalt = reader.GetString(2);
+                    failedPasswordAttemptCount = reader.GetInt32(3);
+                    failedPasswordAnswerAttemptCount = reader.GetInt32(4);
+                    isApproved = reader.GetBoolean(5);
+                    lastLoginDate = reader.GetDateTime(6);
+                    lastActivityDate = reader.GetDateTime(7);
+                }
             }
 
             int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
-
-            if (status != 0)
-            {
-                string exceptionText = GetExceptionText(status);
-
-                throw (status is (>= 2 and <= 6) or 99)
-                    ? new MembershipPasswordException(exceptionText) : new ProviderException(exceptionText);
-            }
 
             return new GetPasswordWithFormatResult()
             {
@@ -723,7 +717,8 @@ namespace SqlMembershipAdapter
                 FailedPasswordAnswerAttemptCount = failedPasswordAnswerAttemptCount,
                 IsApproved = isApproved,
                 LastLoginDate = lastLoginDate,
-                LastActivityDate = lastActivityDate
+                LastActivityDate = lastActivityDate,
+                StatusCode = status
             };
         }
 
@@ -773,25 +768,5 @@ namespace SqlMembershipAdapter
 
         private static string? GetNullableString(SqlDataReader reader, int col) =>
             reader.IsDBNull(col) ? null : reader.GetString(col);
-
-        private static bool IsStatusDueToBadPassword(int status) =>
-            status >= 2 && status <= 6 || status == 99;
-
-        private static DateTime RoundToSeconds(DateTime utcDateTime) =>
-            new(utcDateTime.Year, utcDateTime.Month, utcDateTime.Day, utcDateTime.Hour, utcDateTime.Minute, utcDateTime.Second, DateTimeKind.Utc);
-
-        private static string GetExceptionText(int status) => status switch
-        {
-            0 => string.Empty,
-            1 => "The user was not found.",
-            2 => "The password supplied is wrong.",
-            3 => "The password-answer supplied is wrong.",
-            4 => "The password supplied is invalid.  Passwords must conform to the password strength requirements configured for the default provider.",
-            5 => "The password-question supplied is invalid.  Note that the current provider configuration requires a valid password question and answer.  As a result, a CreateUser overload that accepts question and answer parameters must also be used.",
-            6 => "The password-answer supplied is invalid.",
-            7 => "The E-mail supplied is invalid.",
-            99 => "The user account has been locked out.",
-            _ => "The Provider encountered an unknown error.",
-        };
     }
 }
