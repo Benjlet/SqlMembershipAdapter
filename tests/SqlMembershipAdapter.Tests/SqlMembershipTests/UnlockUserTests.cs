@@ -50,7 +50,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockStore.Setup(x => x.UnlockUser(It.IsAny<string>())).ReturnsAsync(false);
 
-            var result = await _sut.UnlockUser("username");
+            bool result = await _sut.UnlockUser("username");
 
             Assert.That(result, Is.False);
         }
@@ -62,7 +62,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockStore.Setup(x => x.UnlockUser(It.IsAny<string>())).ReturnsAsync(true);
 
-            var result = await _sut.UnlockUser("username");
+            bool result = await _sut.UnlockUser("username");
 
             Assert.That(result, Is.True);
         }

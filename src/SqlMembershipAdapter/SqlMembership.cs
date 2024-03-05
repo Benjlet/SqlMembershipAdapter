@@ -1,4 +1,6 @@
 ﻿using SqlMembershipAdapter.Abstractions;
+using SqlMembershipAdapter.Exceptions;
+using SqlMembershipAdapter.Extensions;
 using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Request;
 using SqlMembershipAdapter.Models.Result;
@@ -153,6 +155,14 @@ namespace SqlMembershipAdapter
             }
 
             GetPasswordWithFormatResult passwordWithFormat = await _sqlStore.GetPasswordWithFormat(request.Username, false);
+
+            if (passwordWithFormat.StatusCode != 0)
+            {
+                string exceptionText = passwordWithFormat.StatusCode.ToProviderErrorText();
+
+                throw (passwordWithFormat.StatusCode is (>= 2 and <= 6) or 99)
+                    ? new MembershipPasswordException(exceptionText) : new ProviderException(exceptionText);
+            }
 
             string? encodedPasswordAnswer = _encryption.Encode(request.PasswordAnswer, passwordWithFormat.PasswordFormat, passwordWithFormat.PasswordSalt);
 
@@ -323,7 +333,7 @@ namespace SqlMembershipAdapter
         {
             GetPasswordWithFormatResult passwordWithFormat = await _sqlStore.GetPasswordWithFormat(username, updateLastLoginActivityDate);
 
-            if (passwordWithFormat.Password == null || (!passwordWithFormat.IsApproved && failIfNotApproved))
+            if (passwordWithFormat.StatusCode != 0 || passwordWithFormat.Password == null || (!passwordWithFormat.IsApproved && failIfNotApproved))
             {
                 return new CheckPasswordResult()
                 {

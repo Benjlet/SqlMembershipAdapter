@@ -53,7 +53,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockStore.Setup(x => x.GetUser(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(user);
 
-            var result = await _sut.GetUser("username", updateLastActivity: true);
+            MembershipUser? result = await _sut.GetUser("username", updateLastActivity: true);
 
             Assert.That(result, Is.Not.Null);
         }
@@ -67,7 +67,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockStore.Setup(x => x.GetUser(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(user);
 
-            var result = await _sut.GetUser("username", updateLastActivity: true);
+            MembershipUser? result = await _sut.GetUser("username", updateLastActivity: true);
 
             Assert.That(result, Is.Null);
         }
