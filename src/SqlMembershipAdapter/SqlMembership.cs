@@ -147,6 +147,19 @@ namespace SqlMembershipAdapter
         }
 
         /// <inheritdoc/>
+        public async Task<PasswordData> GetPasswordData(string username)
+        {
+            GetPasswordWithFormatResult passwordWithFormat = await _sqlStore.GetPasswordWithFormat(username, false);
+
+            return new PasswordData()
+            {
+                Password = passwordWithFormat.Password,
+                PasswordSalt = passwordWithFormat.PasswordSalt,
+                PasswordFormatCode = passwordWithFormat.PasswordFormat
+            };
+        }
+
+        /// <inheritdoc/>
         public async Task<string> ResetPassword(ResetPasswordRequest request)
         {
             if (!_validator.ValidateUsername(request.Username))

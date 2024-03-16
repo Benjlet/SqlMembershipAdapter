@@ -4,6 +4,8 @@ Adapter for legacy Microsoft ASP.NET Membership tables without the need for Web 
 
 Continuing to use these tables is discouraged on modern systems - you may use this library to at least remove a direct .NET Framework dependency or adapt to your own needs, however you should consider the security risks of not migrating.
 
+[![nuget](https://badgen.net/nuget/v/SqlMembershipAdapter?icon=nuget)](https://www.nuget.org/packages/SqlMembershipAdapter)
+
 # Usage
 
 The original Microsoft ASP.NET Membership implementation requires .NET Framework and is tied to Web configuration and native Windows binaries for encryption. The classic Membership tables are considered legacy and ASP.NET Identity is encouraged by Microsoft as its replacement - the original SHA1/MD5 hash functions it supports are also compromised, so should be avoided.
@@ -35,15 +37,18 @@ You would have an associated Web configuration, looking something like this:
 For this library, the models are replaced with request and response models, rather than lots of `ref` and `out` params like in the original implementation - the above two features would therefore be condensed to:
 
 ```
-SqlMembershipService membership = new(new SqlMembershipSettings()
+SqlMembership membership = new(new SqlMembershipSettings("connectionString")
 {
     MinRequiredNonAlphanumericCharacters = 1
 });
 
-CreateUserResult result = membership.CreateUser(new CreateUserRequest(username, password, email, null, null, true));
+CreateUserResult result = await membership.CreateUser(new CreateUserRequest(
+	username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
 ```
 
 You will need to adapt your Membership code throughout to send and receive these models, however the same data will ultimately be returned and relevant exceptions thrown.
+
+You may want to use `ISqlMembership` within a Dependency Injection container to re-use the `SqlMembership` instance and its configuration for other calls.
 
 # How it was created
 
@@ -56,6 +61,7 @@ The code attempts to retain identical conditions for exception, code flow, and t
 - Machine key and web config validation.
 - Exception types and messages will be close to the `SQLMembershipProvider` validation and exceptions, however the full range such as provider key validation from text web-config translation will not get thrown
 - Password decoding and keyed hash options is removed - this was tied to `UnsafeNativeMethods.cs` which required Windows native binaries, such as `GetSHA1Hash`
+- Static references - the database calls are asynchronous
 - Membership schema validation
 - Performance Counters (XML)
 - HttpException references
