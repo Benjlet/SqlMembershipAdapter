@@ -83,6 +83,14 @@ namespace SqlMembershipAdapter.Abstractions
         Task<int> GetNumberOfUsersOnline(int timeWindowMinutes);
 
         /// <summary>
+        /// Gets the raw password record for a user from the Membership table - the request is not treated as a login attempt.
+        /// This was not exposed in the original Membership implementation and is for backend use.
+        /// </summary>
+        /// <param name="username">Username for the Membership record.</param>
+        /// <returns>Raw password data as stored in the Membership record.</returns>
+        Task<PasswordData> GetPasswordData(string username);
+
+        /// <summary>
         /// Gets details of a specific Membership user by their username.
         /// </summary>
         /// <param name="username">Username.</param>

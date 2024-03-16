@@ -137,7 +137,7 @@ namespace SqlMembershipAdapter
 
         public async Task<MembershipUserCollection> FindUsersByName(string usernameToMatch, int pageIndex, int pageSize)
         {
-            List<MembershipUser> users = [];
+            List<MembershipUser> users = new();
             int totalRecords = 0;
 
             using SqlConnection connection = new(_settings.ConnectionString);
@@ -207,7 +207,7 @@ namespace SqlMembershipAdapter
 
         public async Task<MembershipUserCollection> FindUsersByEmail(string? emailToMatch, int pageIndex, int pageSize)
         {
-            List<MembershipUser> users = [];
+            List<MembershipUser> users = new();
             int totalRecords = 0;
 
             using SqlConnection connection = new(_settings.ConnectionString);
@@ -448,7 +448,7 @@ namespace SqlMembershipAdapter
 
         public async Task<MembershipUserCollection> GetAllUsers(int pageIndex, int pageSize)
         {
-            List<MembershipUser> users = [];
+            List<MembershipUser> users = new();
             int totalRecords = 0;
 
             using SqlConnection connection = new(_settings.ConnectionString);

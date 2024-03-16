@@ -11,7 +11,7 @@ namespace SqlMembershipAdapter
         private const int SALT_SIZE = 16;
         private const int PASSWORD_SIZE = 14;
 
-        private static readonly char[] startingChars = ['<', '&'];
+        private static readonly char[] startingChars = new char[] { '<', '&' };
         private static readonly char[] punctuations = "!@#$%^&*()_-+=[{]};:>|./?".ToCharArray();
 
         private readonly ISqlMembershipSettings _settings;
