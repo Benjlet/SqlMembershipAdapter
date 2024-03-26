@@ -66,7 +66,7 @@ namespace SqlMembershipAdapter.Store
 
             using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                if (await reader.ReadAsync())
+                while (await reader.ReadAsync())
                 {
                     sc.Add(reader.GetString(0));
                 }
@@ -195,7 +195,7 @@ namespace SqlMembershipAdapter.Store
 
             using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                if (await reader.ReadAsync())
+                while (await reader.ReadAsync())
                 {
                     sc.Add(reader.GetString(0));
                 }
@@ -237,7 +237,7 @@ namespace SqlMembershipAdapter.Store
 
             using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                if (await reader.ReadAsync())
+                while (await reader.ReadAsync())
                 {
                     sc.Add(reader.GetString(0));
                 }
@@ -269,7 +269,7 @@ namespace SqlMembershipAdapter.Store
 
             using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess))
             {
-                if (await reader.ReadAsync())
+                while (await reader.ReadAsync())
                 {
                     sc.Add(reader.GetString(0));
                 }
@@ -397,11 +397,9 @@ namespace SqlMembershipAdapter.Store
             SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
             returnParameter.Direction = ParameterDirection.ReturnValue;
 
-            await connection.OpenAsync();
-
             using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow))
             {
-                if (await reader.ReadAsync())
+                while (await reader.ReadAsync())
                 {
                     if (reader.FieldCount > 0)
                     {
@@ -524,11 +522,9 @@ namespace SqlMembershipAdapter.Store
             SqlParameter returnParameter = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
             returnParameter.Direction = ParameterDirection.ReturnValue;
 
-            await connection.OpenAsync();
-
             using (SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow))
             {
-                if (await reader.ReadAsync())
+                while (await reader.ReadAsync())
                 {
                     if (reader.FieldCount > 0)
                     {
