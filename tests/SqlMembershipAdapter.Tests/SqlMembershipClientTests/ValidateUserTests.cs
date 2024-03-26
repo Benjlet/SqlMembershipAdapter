@@ -9,7 +9,7 @@ namespace SqlMembershipAdapter.Tests
 {
     public class ValidateUserTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -24,7 +24,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,
@@ -40,11 +40,7 @@ namespace SqlMembershipAdapter.Tests
 
             ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
             {
-                await _sut.ValidateUser(new ValidateUserRequest()
-                {
-                    Password = "password",
-                    Username = "username"
-                });
+                await _sut.ValidateUser(new ValidateUserRequest("username", "password"));
             });
 
             Assert.That(exception.Message, Is.EqualTo(failedParam));
@@ -60,11 +56,7 @@ namespace SqlMembershipAdapter.Tests
 
             ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
             {
-                await _sut.ValidateUser(new ValidateUserRequest()
-                {
-                    Password = "password",
-                    Username = "username"
-                });
+                await _sut.ValidateUser(new ValidateUserRequest("username", "password"));
             });
 
             Assert.That(exception.Message, Is.EqualTo(failedParam));
@@ -95,11 +87,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockEncryption.Setup(x => x.Encode(It.Is<string>(s => s == password), It.Is<int>(i => i == 1), It.Is<string>(s => s == salt))).Returns("A different password");
 
-            bool result = await _sut.ValidateUser(new ValidateUserRequest()
-            {
-                Username = username,
-                Password = password
-            });
+            bool result = await _sut.ValidateUser(new ValidateUserRequest(username, password));
 
             Assert.That(result, Is.False);
         }
@@ -129,11 +117,7 @@ namespace SqlMembershipAdapter.Tests
 
             _mockEncryption.Setup(x => x.Encode(It.Is<string>(s => s == password), It.Is<int>(i => i == 1), It.Is<string>(s => s == salt))).Returns(hashedPassword);
 
-            bool result = await _sut.ValidateUser(new ValidateUserRequest()
-            {
-                Username = username,
-                Password = password
-            });
+            bool result = await _sut.ValidateUser(new ValidateUserRequest(username, password));
 
             Assert.That(result, Is.True);
         }

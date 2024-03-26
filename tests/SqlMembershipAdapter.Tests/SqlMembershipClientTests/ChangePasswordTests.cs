@@ -8,7 +8,7 @@ namespace SqlMembershipAdapter.Tests
 {
     public class ChangePasswordTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -23,7 +23,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,

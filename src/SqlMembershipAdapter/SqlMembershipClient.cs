@@ -1,16 +1,18 @@
 ﻿using SqlMembershipAdapter.Abstractions;
 using SqlMembershipAdapter.Exceptions;
 using SqlMembershipAdapter.Extensions;
+using SqlMembershipAdapter.Implementation;
 using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Request;
 using SqlMembershipAdapter.Models.Result;
+using SqlMembershipAdapter.Store;
 
 namespace SqlMembershipAdapter
 {
     /// <summary>
     /// Adapter for SQL Membership calls.
     /// </summary>
-    public class SqlMembership : ISqlMembership
+    public class SqlMembershipClient : ISqlMembershipClient
     {
         private readonly ISqlMembershipStore _sqlStore;
         private readonly ISqlMembershipSettings _settings;
@@ -18,10 +20,10 @@ namespace SqlMembershipAdapter
         private readonly ISqlMembershipEncryption _encryption;
 
         /// <summary>
-        /// Initialises a new SqlMembership client with the supplied SQL database connection string and default Membership settings.
+        /// Initialises a new SqlMembershipClient with the supplied SQL database connection string and default Membership settings.
         /// </summary>
         /// <param name="sqlConnectionString">The SQL Membership database connection string.</param>
-        public SqlMembership(
+        public SqlMembershipClient(
             string sqlConnectionString)
         {
             _settings = new SqlMembershipSettings(sqlConnectionString);
@@ -31,11 +33,11 @@ namespace SqlMembershipAdapter
         }
 
         /// <summary>
-        /// Initialises a new SqlMembership client with the supplied Membership settings.
+        /// Initialises a new SqlMembershipClient with the supplied Membership settings.
         /// </summary>
         /// <param name="settings">Membership settings.</param>
         /// <exception cref="ArgumentNullException"/>
-        public SqlMembership(
+        public SqlMembershipClient(
             SqlMembershipSettings settings)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -44,7 +46,10 @@ namespace SqlMembershipAdapter
             _sqlStore = new SqlMembershipStore(_settings);
         }
 
-        internal SqlMembership(
+        /// <summary>
+        /// Internal implementation for unit testing.
+        /// </summary>
+        internal SqlMembershipClient(
             ISqlMembershipStore sqlStore,
             ISqlMembershipValidator validator,
             ISqlMembershipEncryption encryption,
@@ -87,7 +92,7 @@ namespace SqlMembershipAdapter
                 request.Email,
                 request.PasswordQuestion,
                 encodedPasswordAnswer,
-                request.IsApproved);
+                request.IsApproved).ConfigureAwait(false);
 
             return createResult;
         }
@@ -114,7 +119,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(request.NewPasswordAnswer));
             }
 
-            await _sqlStore.ChangePasswordQuestionAndAnswer(request.Username, request.Password, request.NewPasswordQuestion, encodedPasswordAnswer);
+            await _sqlStore.ChangePasswordQuestionAndAnswer(request.Username, request.Password, request.NewPasswordQuestion, encodedPasswordAnswer).ConfigureAwait(false);
 
             return true;
         }
@@ -141,15 +146,15 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(request.NewPassword));
             }
 
-            bool isPasswordChanged = await _sqlStore.ChangePassword(request.Username, encodedPassword, checkPassword.PasswordSalt, checkPassword.PasswordFormat);
+            bool isPasswordChanged = await _sqlStore.ChangePassword(request.Username, encodedPassword, checkPassword.PasswordSalt, checkPassword.PasswordFormat).ConfigureAwait(false);
 
             return isPasswordChanged;
         }
 
         /// <inheritdoc/>
-        public async Task<PasswordData> GetPasswordData(string username)
+        public async Task<PasswordData> GetPassword(string username)
         {
-            GetPasswordWithFormatResult passwordWithFormat = await _sqlStore.GetPasswordWithFormat(username, false);
+            GetPasswordWithFormatResult passwordWithFormat = await _sqlStore.GetPasswordWithFormat(username, false).ConfigureAwait(false);
 
             return new PasswordData()
             {
@@ -187,7 +192,7 @@ namespace SqlMembershipAdapter
             string newPassword = await GeneratePassword();
             string newPasswordEncoded = _encryption.Encode(newPassword, passwordWithFormat.PasswordFormat, passwordWithFormat.PasswordSalt) ?? string.Empty;
 
-            await _sqlStore.ResetPassword(request.Username, newPasswordEncoded, passwordWithFormat.PasswordSalt, encodedPasswordAnswer, passwordWithFormat.PasswordFormat);
+            await _sqlStore.ResetPassword(request.Username, newPasswordEncoded, passwordWithFormat.PasswordSalt, encodedPasswordAnswer, passwordWithFormat.PasswordFormat).ConfigureAwait(false);
 
             return newPassword;
         }
@@ -205,7 +210,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(user.Email));
             }
 
-            await _sqlStore.UpdateUser(user);
+            await _sqlStore.UpdateUser(user).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
@@ -221,7 +226,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(request.Password));
             }
 
-            CheckPasswordResult isValidPassword = await CheckPassword(request.Username, request.Password, true, true);
+            CheckPasswordResult isValidPassword = await CheckPassword(request.Username, request.Password, true, true).ConfigureAwait(false);
 
             return isValidPassword.IsValid;
         }
@@ -234,7 +239,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(username));
             }
 
-            bool isUnlocked = await _sqlStore.UnlockUser(username);
+            bool isUnlocked = await _sqlStore.UnlockUser(username).ConfigureAwait(false);
 
             return isUnlocked;
         }
@@ -247,9 +252,26 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(username));
             }
 
-            MembershipUser? user = await _sqlStore.GetUser(username, updateLastActivity);
+            MembershipUser? user = await _sqlStore.GetUser(username, updateLastActivity).ConfigureAwait(false);
 
             return user;
+        }
+
+        /// <inheritdoc/>
+        public async Task<MembershipUser?> GetUser(Guid providerUserKey, bool updateLastActivity)
+        {
+            return await _sqlStore.GetUser(providerUserKey, updateLastActivity).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<MembershipUser?> GetUser(object providerUserKey, bool updateLastActivity)
+        {
+            if (providerUserKey == null || !Guid.TryParse(providerUserKey.ToString(), out Guid userKey))
+            {
+                throw new ArgumentException(nameof(providerUserKey));
+            }
+
+            return await _sqlStore.GetUser(userKey, updateLastActivity).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
@@ -260,7 +282,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(email));
             }
 
-            string? userName = await _sqlStore.GetUsernameByEmail(email);
+            string? userName = await _sqlStore.GetUsernameByEmail(email).ConfigureAwait(false);
 
             return userName;
         }
@@ -273,7 +295,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException(nameof(request.Username));
             }
 
-            bool isDeleted = await _sqlStore.DeleteUser(request.Username, request.DeleteAllRelatedData);
+            bool isDeleted = await _sqlStore.DeleteUser(request.Username, request.DeleteAllRelatedData).ConfigureAwait(false);
 
             return isDeleted;
         }
@@ -286,7 +308,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException($"{nameof(pageIndex)} & {nameof(pageSize)}");
             }
 
-            MembershipUserCollection users = await _sqlStore.GetAllUsers(pageIndex, pageSize);
+            MembershipUserCollection users = await _sqlStore.GetAllUsers(pageIndex, pageSize).ConfigureAwait(false);
 
             return users;
         }
@@ -294,7 +316,7 @@ namespace SqlMembershipAdapter
         /// <inheritdoc/>
         public async Task<int> GetNumberOfUsersOnline(int timeWindowMinutes)
         {
-            int numberOfUsersOnline = await _sqlStore.GetNumberOfUsersOnline(timeWindowMinutes);
+            int numberOfUsersOnline = await _sqlStore.GetNumberOfUsersOnline(timeWindowMinutes).ConfigureAwait(false);
 
             return numberOfUsersOnline;
         }
@@ -312,7 +334,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException($"{nameof(request.PageIndex)} & {nameof(request.PageSize)}");
             }
 
-            MembershipUserCollection users = await _sqlStore.FindUsersByName(request.Criteria, request.PageIndex, request.PageSize);
+            MembershipUserCollection users = await _sqlStore.FindUsersByName(request.Criteria, request.PageIndex, request.PageSize).ConfigureAwait(false);
 
             return users;
         }
@@ -330,7 +352,7 @@ namespace SqlMembershipAdapter
                 throw new ArgumentException($"{nameof(request.PageIndex)} & {nameof(request.PageSize)}");
             }
 
-            MembershipUserCollection users = await _sqlStore.FindUsersByEmail(request.Criteria, request.PageIndex, request.PageSize);
+            MembershipUserCollection users = await _sqlStore.FindUsersByEmail(request.Criteria, request.PageIndex, request.PageSize).ConfigureAwait(false);
 
             return users;
         }
@@ -362,7 +384,7 @@ namespace SqlMembershipAdapter
 
             if (!isPasswordCorrect || passwordWithFormat.FailedPasswordAttemptCount != 0 || passwordWithFormat.FailedPasswordAnswerAttemptCount != 0)
             {
-                await _sqlStore.CheckPassword(username, isPasswordCorrect, updateLastLoginActivityDate, passwordWithFormat.LastLoginDate, passwordWithFormat.LastActivityDate);
+                await _sqlStore.CheckPassword(username, isPasswordCorrect, updateLastLoginActivityDate, passwordWithFormat.LastLoginDate, passwordWithFormat.LastActivityDate).ConfigureAwait(false);
             }
 
             return new CheckPasswordResult()

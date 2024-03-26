@@ -1,0 +1,84 @@
+using Moq;
+using NUnit.Framework;
+using SqlMembershipAdapter.Abstractions;
+
+namespace SqlMembershipAdapter.Tests
+{
+    public class AddUsersToRolesTests
+    {
+        private SqlRoleClient _sut;
+
+        private Mock<ISqlMembershipRoleStore> _mockStore;
+        private Mock<ISqlMembershipSettings> _mockSettings;
+        private Mock<ISqlMembershipValidator> _mockValidator;
+
+        [SetUp]
+        public void Setup()
+        {
+            _mockStore = new Mock<ISqlMembershipRoleStore>();
+            _mockSettings = new Mock<ISqlMembershipSettings>();
+            _mockValidator = new Mock<ISqlMembershipValidator>();
+
+            _sut = new SqlRoleClient(
+                _mockStore.Object,
+                _mockValidator.Object,
+                _mockSettings.Object);
+        }
+
+        [Test]
+        public void AddUsersToRoles_UsernamesValidationFailed_ReturnsParam()
+        {
+            string? failedParam = "roleNames";
+
+            string[] users = ["user_one", "user_two"];
+            string[] roles = ["role_one"];
+
+            _mockValidator.SetupSequence(x => x.ValidateArray(It.IsAny<string[]>()))
+              .Returns(false)
+              .Returns(true);
+
+            ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
+            {
+                await _sut.AddUsersToRoles(users, roles);
+            });
+
+            Assert.That(exception.Message, Is.EqualTo(failedParam));
+        }
+
+        [Test]
+        public void AddUsersToRoles_RolesValidationFailed_ReturnsParam()
+        {
+            string? failedParam = "usernames";
+
+            string[] users = ["user_one", "user_two"];
+            string[] roles = ["role_one"];
+
+            _mockValidator.SetupSequence(x => x.ValidateArray(It.IsAny<string[]>()))
+              .Returns(true)
+              .Returns(false);
+
+            ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
+            {
+                await _sut.AddUsersToRoles(users, roles);
+            });
+
+            Assert.That(exception.Message, Is.EqualTo(failedParam));
+        }
+
+        [Test]
+        public void AddUsersToRoles_Processed_Completes()
+        {
+            string[] users = ["user_one", "user_two"];
+            string[] roles = ["role_one"];
+
+            _mockValidator.SetupSequence(x => x.ValidateArray(It.IsAny<string[]>()))
+              .Returns(true)
+              .Returns(true);
+
+            _mockStore.Setup(x => x.AddUsersToRoles(It.IsAny<string[]>(), It.IsAny<string[]>())).Returns(Task.CompletedTask);
+
+            async Task Act() => await _sut.AddUsersToRoles(users, roles);
+            Assert.DoesNotThrowAsync(Act);
+        }
+    }
+}

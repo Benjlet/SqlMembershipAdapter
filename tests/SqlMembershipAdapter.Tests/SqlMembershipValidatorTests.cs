@@ -1,6 +1,7 @@
 using Moq;
 using NUnit.Framework;
 using SqlMembershipAdapter.Abstractions;
+using SqlMembershipAdapter.Implementation;
 using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Request;
 

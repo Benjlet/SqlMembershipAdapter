@@ -3,7 +3,7 @@ using SqlMembershipAdapter.Abstractions;
 using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Request;
 
-namespace SqlMembershipAdapter
+namespace SqlMembershipAdapter.Implementation
 {
     internal class SqlMembershipValidator : ISqlMembershipValidator
     {
@@ -76,9 +76,32 @@ namespace SqlMembershipAdapter
             return !string.IsNullOrWhiteSpace(username) && username.Length <= 256 && !username.Contains(",");
         }
 
+        public bool ValidateRoleName(string? roleName)
+        {
+            return !string.IsNullOrWhiteSpace(roleName) && roleName.Length <= 256 && !roleName.Contains(",");
+        }
+
         public bool ValidateEmail(string? email)
         {
             return (!string.IsNullOrWhiteSpace(email) || !_settings.RequiresUniqueEmail) && (email == null || email.Length <= 256);
+        }
+
+        public bool ValidateArray(string[] param)
+        {
+            if (param == null || param.Length < 1)
+            {
+                return false;
+            }
+
+            foreach (var paramValue in param)
+            {
+                if (string.IsNullOrWhiteSpace(paramValue) || paramValue.Length > 256 || paramValue.Contains(","))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public bool ValidateChangePasswordQuestionAnswer(ChangePasswordQuestionAndAnswerRequest request, out string? invalidParam)

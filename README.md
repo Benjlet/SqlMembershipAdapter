@@ -14,6 +14,8 @@ If you need to continue use of legacy Membership tables but wish to move away fr
 
 # Examples
 
+## MembershipProvider
+
 Here is an example of creating a user using the original .NET Framework Membership:
 
 ```
@@ -37,18 +39,55 @@ You would have an associated Web configuration, looking something like this:
 For this library, the models are replaced with request and response models, rather than lots of `ref` and `out` params like in the original implementation - the above two features would therefore be condensed to:
 
 ```
-SqlMembership membership = new(new SqlMembershipSettings("connectionString")
+SqlMembershipClient membership = new(new SqlMembershipSettings("connectionString")
 {
     MinRequiredNonAlphanumericCharacters = 1
 });
 
-CreateUserResult result = await membership.CreateUser(new CreateUserRequest(
-	username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
+CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
+	username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 ```
 
 You will need to adapt your Membership code throughout to send and receive these models, however the same data will ultimately be returned and relevant exceptions thrown.
 
-You may want to use `ISqlMembership` within a Dependency Injection container to re-use the `SqlMembership` instance and its configuration for other calls.
+You may want to use `ISqlMembershipClient` within a Dependency Injection container to re-use the `SqlMembershipClient` instance and its configuration for other calls.
+
+## RoleProvider
+
+Under the same install as the Membership tables is the Role functionality - this has been added to the Membership adapter as `SqlRoleClient`.
+
+Originally you would configure the Provider alongside Membership in your web config:
+
+```
+<roleManager enabled="true" defaultProvider="SqlRoleProvider">
+    <providers>
+        <clear />
+        <add name="SqlRoleProvider" type="System.Web.Security.SqlRoleProvider" connectionStringName="MembershipConnection" applicationName="/" />
+    </providers>
+</roleManager>
+```
+
+Then you would identify the provider and add users to roles:
+
+```
+SqlRoleProvider roleProvider = (SqlRoleProvider)Roles.Provider;
+
+string[] usernames = { "user1", "user2" };
+string[] roleNames = { "role1", "role2" };
+
+roleProvider.AddUsersToRoles(usernames, roleNames);
+```
+
+The `SqlRoleClient` adapter uses identical param types:
+
+```
+SqlRoleClient roleClient = new("connectionString");
+
+string[] usernames = { "user1", "user2" };
+string[] roleNames = { "role1", "role2" };
+
+roleClient.AddUsersToRoles(usernames, roleNames);
+```
 
 # How it was created
 
