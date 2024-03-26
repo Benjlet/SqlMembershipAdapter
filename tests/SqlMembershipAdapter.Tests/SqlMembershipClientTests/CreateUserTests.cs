@@ -9,7 +9,7 @@ namespace SqlMembershipAdapter.Tests
 {
     public class CreateUserTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -24,7 +24,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,
@@ -70,7 +70,7 @@ namespace SqlMembershipAdapter.Tests
                     .ReturnsAsync(new CreateUserResult(createdUser, MembershipCreateStatus.Success));
 
             CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
-                username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
+                username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 
             _mockStore.Verify(x => x.CreateUser(
                 It.Is<Guid?>(g => g == userId),
@@ -114,7 +114,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator.Setup(x => x.ValidateCreateUserRequest(It.IsAny<CreateUserRequest>(), out status)).Returns(false);
 
             CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
-                username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
+                username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 
             Assert.Multiple(() =>
             {
@@ -149,7 +149,7 @@ namespace SqlMembershipAdapter.Tests
             _mockEncryption.Setup(x => x.Encode(It.Is<string>(s => s == password), It.Is<int>(i => i == 1), It.Is<string>(s => s == salt))).Returns(encodedPassword);
 
             CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
-                username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
+                username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 
             Assert.Multiple(() =>
             {
@@ -185,7 +185,7 @@ namespace SqlMembershipAdapter.Tests
             _mockEncryption.Setup(x => x.Encode(It.Is<string>(s => s == password), It.Is<int>(i => i == 1), It.Is<string>(s => s == salt))).Returns(encodedPassword);
 
             CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
-                username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
+                username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 
             Assert.Multiple(() =>
             {
@@ -242,7 +242,7 @@ namespace SqlMembershipAdapter.Tests
                     .ReturnsAsync(new CreateUserResult(status));
 
             CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
-                username, password, email, passwordQuestion, passwordAnswer, userId, isApproved));
+                username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 
             _mockStore.Verify(x => x.CreateUser(
                 It.Is<Guid?>(g => g == userId),

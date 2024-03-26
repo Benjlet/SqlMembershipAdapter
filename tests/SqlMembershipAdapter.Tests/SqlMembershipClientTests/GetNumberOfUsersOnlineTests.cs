@@ -4,9 +4,9 @@ using SqlMembershipAdapter.Abstractions;
 
 namespace SqlMembershipAdapter.Tests
 {
-    public class GeneratePasswordTests
+    public class GetNumberOfUsersOnlineTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -21,7 +21,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,
@@ -29,15 +29,15 @@ namespace SqlMembershipAdapter.Tests
         }
 
         [Test]
-        public async Task GeneratePassword_Generates_ReturnsPassword()
+        public async Task GetNumberOfUsersOnlineTests_Searches_ReturnsCount()
         {
-            string password = "hunter2";
+            int userCount = 3;
 
-            _mockEncryption.Setup(x => x.GeneratePassword()).Returns(password);
+            _mockStore.Setup(x => x.GetNumberOfUsersOnline(It.IsAny<int>())).ReturnsAsync(userCount);
 
-            string result = await _sut.GeneratePassword();
+            int result = await _sut.GetNumberOfUsersOnline(15);
 
-            Assert.That(result, Is.EqualTo(password));
+            Assert.That(result, Is.EqualTo(userCount));
         }
     }
 }

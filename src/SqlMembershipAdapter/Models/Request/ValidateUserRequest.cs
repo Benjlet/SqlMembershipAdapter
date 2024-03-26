@@ -5,25 +5,27 @@
     /// </summary>
     public class ValidateUserRequest
     {
-        private string _password = string.Empty;
-        private string _username = string.Empty;
-
         /// <summary>
         /// Username.
         /// </summary>
-        public string Username
-        {
-            get => _username;
-            set => _username = value?.Trim() ?? string.Empty;
-        }
+        public string Username { get; }
 
         /// <summary>
         /// Password.
         /// </summary>
-        public string Password
+        public string Password { get; }
+
+        /// <summary>
+        /// Initialises a new request to validate a user.
+        /// </summary>
+        /// <param name="username">Username.</param>
+        /// <param name="password">Password.</param>
+        public ValidateUserRequest(
+            string username,
+            string password)
         {
-            get => _password;
-            set => _password = value?.Trim() ?? string.Empty;
+            Username = username?.Trim() ?? string.Empty;
+            Password = password?.Trim() ?? string.Empty;
         }
     }
 }

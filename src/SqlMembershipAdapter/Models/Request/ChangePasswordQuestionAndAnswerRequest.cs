@@ -5,30 +5,25 @@
     /// </summary>
     public class ChangePasswordQuestionAndAnswerRequest
     {
-        private readonly string _username;
-        private readonly string _password;
-        private readonly string? _newPasswordQuestion = null;
-        private readonly string? _newPasswordAnswer = null;
-
         /// <summary>
         /// Username.
         /// </summary>
-        public string Username => _username;
+        public string Username { get; }
 
         /// <summary>
         /// Password.
         /// </summary>
-        public string Password => _password;
+        public string Password { get; }
 
         /// <summary>
         /// The new password question.
         /// </summary>
-        public string? NewPasswordQuestion => _newPasswordQuestion;
+        public string? NewPasswordQuestion { get; } = null;
 
         /// <summary>
         /// The new password answer.
         /// </summary>
-        public string? NewPasswordAnswer => _newPasswordAnswer;
+        public string? NewPasswordAnswer { get; } = null;
 
         /// <summary>
         /// Initialises a new ChangePasswordQuestionAndAnswerRequest with the supplied details.
@@ -39,11 +34,11 @@
         /// <param name="newPasswordAnswer">New password answer.</param>
         public ChangePasswordQuestionAndAnswerRequest(string username, string password, string? newPasswordQuestion = null, string? newPasswordAnswer = null)
         {
-            _username = username?.Trim() ?? string.Empty;
-            _password = password?.Trim() ?? string.Empty;
+            Username = username?.Trim() ?? string.Empty;
+            Password = password?.Trim() ?? string.Empty;
 
-            _newPasswordQuestion = newPasswordQuestion?.Trim() ?? null;
-            _newPasswordAnswer = newPasswordAnswer?.Trim() ?? null;
+            NewPasswordQuestion = newPasswordQuestion?.Trim() ?? null;
+            NewPasswordAnswer = newPasswordAnswer?.Trim() ?? null;
         }
     }
 }

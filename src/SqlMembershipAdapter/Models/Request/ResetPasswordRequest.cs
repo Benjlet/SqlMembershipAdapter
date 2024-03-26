@@ -5,25 +5,27 @@
     /// </summary>
     public class ResetPasswordRequest
     {
-        private string _username = string.Empty;
-        private string? _passwordAnswer;
-
         /// <summary>
         /// Username.
         /// </summary>
-        public string Username
-        {
-            get => _username;
-            set => _username = value?.Trim() ?? string.Empty;
-        }
+        public string Username { get; }
 
         /// <summary>
         /// Password.
         /// </summary>
-        public string? PasswordAnswer
+        public string? PasswordAnswer { get; }
+
+        /// <summary>
+        /// Initialises a new password reset request.
+        /// </summary>
+        /// <param name="username">Username.</param>
+        /// <param name="passwordAnswer">Password.</param>
+        public ResetPasswordRequest(
+            string username,
+            string passwordAnswer)
         {
-            get => _passwordAnswer;
-            set => _passwordAnswer = value?.Trim();
+            Username = username?.Trim() ?? string.Empty;
+            PasswordAnswer = passwordAnswer?.Trim();
         }
     }
 }

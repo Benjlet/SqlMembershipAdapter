@@ -4,7 +4,7 @@ using System.Text;
 using SqlMembershipAdapter.Abstractions;
 using SqlMembershipAdapter.Models;
 
-namespace SqlMembershipAdapter
+namespace SqlMembershipAdapter.Implementation
 {
     internal class SqlMembershipEncryption : ISqlMembershipEncryption
     {
@@ -134,7 +134,7 @@ namespace SqlMembershipAdapter
                 {
                     char nextChar = s[index + 1];
 
-                    if ((c == '<' && (char.IsLetter(nextChar) || nextChar == '!' || nextChar == '/' || nextChar == '?')) || (c == '&' && nextChar == '#'))
+                    if (c == '<' && (char.IsLetter(nextChar) || nextChar == '!' || nextChar == '/' || nextChar == '?') || c == '&' && nextChar == '#')
                     {
                         return true;
                     }

@@ -12,7 +12,7 @@ namespace SqlMembershipAdapter
         private int _minRequiredPasswordLength = 7;
         private int _passwordAttemptWindow = 10;
         private int _minRequiredNonAlphanumericCharacters = 1;
-        private int _commandTimeoutSeconds = 30;
+        private int _commandTimeoutMilliseconds = 30;
 
         private string _passwordStrengthRegularExpression = string.Empty;
         private string _applicationName = "SqlMembershipProvider";
@@ -54,17 +54,17 @@ namespace SqlMembershipAdapter
         public bool RequiresUniqueEmail { get; set; } = true;
 
         /// <inheritdoc/>
-        public int CommandTimeoutSeconds
+        public int CommandTimeoutMilliseconds
         {
-            get => _commandTimeoutSeconds;
+            get => _commandTimeoutMilliseconds;
             set
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(CommandTimeoutSeconds));
+                    throw new ArgumentOutOfRangeException(nameof(CommandTimeoutMilliseconds));
                 }
 
-                _commandTimeoutSeconds = value;
+                _commandTimeoutMilliseconds = value;
             }
         }
 

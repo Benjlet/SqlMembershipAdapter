@@ -5,48 +5,40 @@
     /// </summary>
     public class CreateUserRequest
     {
-        private readonly string? _username;
-        private readonly string? _password;
-        private readonly string? _email;
-        private readonly string? _passwordQuestion;
-        private readonly string? _passwordAnswer;
-        private readonly Guid? _providerUserKey;
-        private readonly bool _isApproved;
-
         /// <summary>
         /// Username; this is often the same as the email.
         /// </summary>
-        public string? Username => _username;
+        public string? Username { get; }
 
         /// <summary>
         /// Password.
         /// </summary>
-        public string? Password => _password;
+        public string? Password { get; }
 
         /// <summary>
         /// Email.
         /// </summary>
-        public string? Email => _email;
+        public string? Email { get; }
 
         /// <summary>
         /// Password question.
         /// </summary>
-        public string? PasswordQuestion => _passwordQuestion;
+        public string? PasswordQuestion { get; }
 
         /// <summary>
         /// Password answer.
         /// </summary>
-        public string? PasswordAnswer => _passwordAnswer;
+        public string? PasswordAnswer { get; }
 
         /// <summary>
         /// Approval status of the user.
         /// </summary>
-        public bool IsApproved => _isApproved;
+        public bool IsApproved { get; }
 
         /// <summary>
         /// The provider user key of the user (UserId).
         /// </summary>
-        public Guid? ProviderUserKey => _providerUserKey;
+        public Guid? ProviderUserKey { get; }
 
         /// <summary>
         /// Initialises a new CreateUserRequest with the supplied details.
@@ -64,16 +56,44 @@
             string? email,
             string? passwordQuestion,
             string? passwordAnswer,
-            Guid? providerUserKey,
-            bool isApproved)
+            bool isApproved,
+            Guid? providerUserKey)
         {
-            _username = username?.Trim();
-            _password = password?.Trim();
-            _email = email?.Trim();
-            _passwordQuestion = passwordQuestion?.Trim();
-            _passwordAnswer = passwordAnswer?.Trim();
-            _providerUserKey = providerUserKey;
-            _isApproved = isApproved;
+            Username = username?.Trim();
+            Password = password?.Trim();
+            Email = email?.Trim();
+            PasswordQuestion = passwordQuestion?.Trim();
+            PasswordAnswer = passwordAnswer?.Trim();
+            ProviderUserKey = providerUserKey;
+            IsApproved = isApproved;
+        }
+
+        /// <summary>
+        /// Initialises a new CreateUserRequest with the supplied details.
+        /// </summary>
+        /// <param name="username">Username</param>
+        /// <param name="password">Password</param>
+        /// <param name="email">Email</param>
+        /// <param name="passwordQuestion">Password question.</param>
+        /// <param name="passwordAnswer">Password answer.</param>
+        /// <param name="providerUserKey">User ID. Set to null for new users. Will attempt to parse as a Guid.</param>
+        /// <param name="isApproved">Approval status of the user.</param>
+        public CreateUserRequest(
+            string username,
+            string password,
+            string? email,
+            string? passwordQuestion,
+            string? passwordAnswer,
+            bool isApproved,
+            object providerUserKey)
+        {
+            Username = username?.Trim();
+            Password = password?.Trim();
+            Email = email?.Trim();
+            PasswordQuestion = passwordQuestion?.Trim();
+            PasswordAnswer = passwordAnswer?.Trim();
+            ProviderUserKey = providerUserKey == null || !Guid.TryParse(providerUserKey.ToString(), out Guid userKey) ? null : userKey;
+            IsApproved = isApproved;
         }
     }
 }

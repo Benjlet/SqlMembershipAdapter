@@ -16,7 +16,7 @@ namespace SqlMembershipAdapter.Abstractions
         /// <summary>
         /// The command timeout in seconds for any database calls.
         /// </summary>
-        int CommandTimeoutSeconds { get; set; }
+        int CommandTimeoutMilliseconds { get; set; }
 
         /// <summary>
         /// The SQL database connection string.

@@ -3,12 +3,12 @@ using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Request;
 using SqlMembershipAdapter.Models.Result;
 
-namespace SqlMembershipAdapter.Abstractions
+namespace SqlMembershipAdapter
 {
     /// <summary>
-    /// Adapter for SQL Membership calls.
+    /// Adapter for SQL Membership provider calls.
     /// </summary>
-    internal interface ISqlMembership
+    public interface ISqlMembershipClient
     {
         /// <summary>
         /// Validates and changes the Membership user's password based on the supplied request details.
@@ -84,11 +84,11 @@ namespace SqlMembershipAdapter.Abstractions
 
         /// <summary>
         /// Gets the raw password record for a user from the Membership table - the request is not treated as a login attempt.
-        /// This was not exposed in the original Membership implementation and is for backend use.
+        /// This was not exposed in the original Membership implementation and is for backend use - it replaces the original GetPassword that uses Windows native assemblies.
         /// </summary>
         /// <param name="username">Username for the Membership record.</param>
         /// <returns>Raw password data as stored in the Membership record.</returns>
-        Task<PasswordData> GetPasswordData(string username);
+        Task<PasswordData> GetPassword(string username);
 
         /// <summary>
         /// Gets details of a specific Membership user by their username.
@@ -98,6 +98,24 @@ namespace SqlMembershipAdapter.Abstractions
         /// <returns>Details of the Membership user.</returns>
         /// <exception cref="ArgumentException"/>
         Task<MembershipUser?> GetUser(string username, bool updateLastActivity);
+
+        /// <summary>
+        /// Gets details of a specific Membership user by their provider user key (user id).
+        /// </summary>
+        /// <param name="providerUserKey">Provider user key.</param>
+        /// <param name="updateLastActivity">Flag for whether to treat this as a user activity.</param>
+        /// <returns>Details of the Membership user.</returns>
+        /// <exception cref="ArgumentException"/>
+        Task<MembershipUser?> GetUser(Guid providerUserKey, bool updateLastActivity);
+
+        /// <summary>
+        /// Gets details of a specific Membership user by their provider user key (user id).
+        /// </summary>
+        /// <param name="providerUserKey">Provider user key.</param>
+        /// <param name="updateLastActivity">Flag for whether to treat this as a user activity.</param>
+        /// <returns>Details of the Membership user.</returns>
+        /// <exception cref="ArgumentException"/>
+        Task<MembershipUser?> GetUser(object providerUserKey, bool updateLastActivity);
 
         /// <summary>
         /// Gets the username associated with the supplied email.

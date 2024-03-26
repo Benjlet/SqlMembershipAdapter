@@ -6,7 +6,7 @@ using SqlMembershipAdapter.Extensions;
 using SqlMembershipAdapter.Models;
 using SqlMembershipAdapter.Models.Result;
 
-namespace SqlMembershipAdapter
+namespace SqlMembershipAdapter.Store
 {
     internal class SqlMembershipStore : ISqlMembershipStore
     {
@@ -34,7 +34,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_CreateUser", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, userName));
@@ -70,7 +70,7 @@ namespace SqlMembershipAdapter
                 throw;
             }
 
-            int iStatus = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int iStatus = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             if (iStatus < 0 || iStatus > (int)MembershipCreateStatus.ProviderError)
             {
@@ -114,7 +114,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_ChangePasswordQuestionAndAnswer", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
@@ -127,7 +127,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             if (status != 0)
             {
@@ -144,7 +144,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_FindUsersByName", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserNameToMatch", SqlDbType.NVarChar, usernameToMatch));
@@ -214,7 +214,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_FindUsersByEmail", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@EmailToMatch", SqlDbType.NVarChar, emailToMatch));
@@ -281,7 +281,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_SetPassword", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
@@ -296,7 +296,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             if (status != 0)
             {
@@ -321,7 +321,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_UpdateUser", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, user.UserName));
@@ -339,7 +339,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             if (status != 0)
             {
@@ -353,7 +353,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_UnlockUser", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, userName));
@@ -364,7 +364,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             return status == 0;
         }
@@ -375,7 +375,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_GetUserByName", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
@@ -429,7 +429,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_GetNumberOfUsersOnline", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@MinutesSinceLastInActive", SqlDbType.Int, timeWindowMinutes));
@@ -441,7 +441,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int onlineCount = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int onlineCount = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             return onlineCount;
         }
@@ -455,7 +455,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_GetAllUsers", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@PageIndex", SqlDbType.Int, pageIndex));
@@ -521,7 +521,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Users_DeleteUser", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
@@ -533,7 +533,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             return status > 0;
         }
@@ -544,7 +544,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_GetUserByEmail", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@Email", SqlDbType.NVarChar, email));
@@ -578,7 +578,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_GetUserByUserId", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@UserId", SqlDbType.UniqueIdentifier, providerUserKey));
             command.Parameters.Add(CreateInputParam("@UpdateLastActivity", SqlDbType.Bit, userIsOnline));
@@ -631,7 +631,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_ResetPassword", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
@@ -653,7 +653,7 @@ namespace SqlMembershipAdapter
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             if (status != 0)
             {
@@ -670,7 +670,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_GetPasswordWithFormat", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));
@@ -706,7 +706,7 @@ namespace SqlMembershipAdapter
                 }
             }
 
-            int status = (returnParameter?.Value != null) ? ((int)returnParameter.Value) : -1;
+            int status = returnParameter?.Value != null ? (int)returnParameter.Value : -1;
 
             return new GetPasswordWithFormatResult()
             {
@@ -730,7 +730,7 @@ namespace SqlMembershipAdapter
             using SqlCommand command = new("dbo.aspnet_Membership_UpdateUserInfo", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandTimeout = _settings.CommandTimeoutSeconds;
+            command.CommandTimeout = TimeSpan.FromMilliseconds(_settings.CommandTimeoutMilliseconds).Seconds;
 
             command.Parameters.Add(CreateInputParam("@ApplicationName", SqlDbType.NVarChar, _settings.ApplicationName));
             command.Parameters.Add(CreateInputParam("@UserName", SqlDbType.NVarChar, username));

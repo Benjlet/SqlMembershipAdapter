@@ -1,12 +1,13 @@
 using Moq;
 using NUnit.Framework;
 using SqlMembershipAdapter.Abstractions;
+using SqlMembershipAdapter.Models.Request;
 
 namespace SqlMembershipAdapter.Tests
 {
-    public class UnlockUserTests
+    public class DeleteUserTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -21,7 +22,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,
@@ -29,40 +30,40 @@ namespace SqlMembershipAdapter.Tests
         }
 
         [Test]
-        public void UnlockUserTests_UsernameValidationFailed_ReturnsParam()
+        public void DeleteUser_UsernameValidationFailed_ReturnsParam()
         {
-            string failedParam = "username";
+            string failedParam = "Username";
 
             _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(false);
 
             ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
             {
-                await _sut.UnlockUser("username");
+                await _sut.DeleteUser(new DeleteUserRequest("username", true));
             });
 
             Assert.That(exception.Message, Is.EqualTo(failedParam));
         }
 
         [Test]
-        public async Task UnlockUserTests_UnlockFailed_ReturnsFalse()
+        public async Task DeleteUser_NotDeleted_ReturnsFalse()
         {
             _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(true);
 
-            _mockStore.Setup(x => x.UnlockUser(It.IsAny<string>())).ReturnsAsync(false);
+            _mockStore.Setup(x => x.DeleteUser(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(false);
 
-            bool result = await _sut.UnlockUser("username");
+            bool result = await _sut.DeleteUser(new DeleteUserRequest("username", true));
 
             Assert.That(result, Is.False);
         }
 
         [Test]
-        public async Task UnlockUserTests_UnlockSuccess_ReturnsTrue()
+        public async Task DeleteUser_IsDeleted_ReturnsTrue()
         {
             _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(true);
 
-            _mockStore.Setup(x => x.UnlockUser(It.IsAny<string>())).ReturnsAsync(true);
+            _mockStore.Setup(x => x.DeleteUser(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(true);
 
-            bool result = await _sut.UnlockUser("username");
+            bool result = await _sut.DeleteUser(new DeleteUserRequest("username", true));
 
             Assert.That(result, Is.True);
         }

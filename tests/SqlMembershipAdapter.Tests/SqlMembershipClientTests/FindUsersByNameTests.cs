@@ -6,9 +6,9 @@ using SqlMembershipAdapter.Models.Request;
 
 namespace SqlMembershipAdapter.Tests
 {
-    public class FindUsersByEmailTests
+    public class FindUsersByNameTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -23,7 +23,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,
@@ -31,67 +31,52 @@ namespace SqlMembershipAdapter.Tests
         }
 
         [Test]
-        public void FindUsersByEmail_SearchValidationFailed_ReturnsParam()
+        public void FindUsersByName_SearchValidationFailed_ReturnsParam()
         {
             string failedParam = "PageIndex & PageSize";
 
-            _mockValidator.Setup(x => x.ValidateEmail(It.IsAny<string>())).Returns(true);
+            _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(true);
             _mockValidator.Setup(x => x.ValidatePageRange(It.IsAny<int>(), It.IsAny<int>())).Returns(false);
 
             ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
             {
-                await _sut.FindUsersByEmail(new FindUsersRequest()
-                {
-                    Criteria = "email",
-                    PageIndex = 3,
-                    PageSize = 5
-                });
+                await _sut.FindUsersByName(new FindUsersRequest("username", 3, 5));
             });
 
             Assert.That(exception.Message, Is.EqualTo(failedParam));
         }
 
         [Test]
-        public void FindUsersByEmail_EmailValidationFailed_ReturnsParam()
+        public void FindUsersByName_UsernameValidationFailed_ReturnsParam()
         {
             string failedParam = "Criteria";
 
-            _mockValidator.Setup(x => x.ValidateEmail(It.IsAny<string>())).Returns(false);
+            _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(false);
             _mockValidator.Setup(x => x.ValidatePageRange(It.IsAny<int>(), It.IsAny<int>())).Returns(true);
 
             ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
             {
-                await _sut.FindUsersByEmail(new FindUsersRequest()
-                {
-                    Criteria = "email",
-                    PageIndex = 3,
-                    PageSize = 5
-                });
+                await _sut.FindUsersByName(new FindUsersRequest("username", 3, 5));
             });
 
             Assert.That(exception.Message, Is.EqualTo(failedParam));
         }
 
         [Test]
-        public async Task FindUsersByEmail_Searches_ReturnsResult()
+        public async Task FindUsersByName_Searches_ReturnsResult()
         {
             MembershipUser foundUser = CreateMembershipUser();
 
-            _mockValidator.Setup(x => x.ValidateEmail(It.IsAny<string>())).Returns(true);
+            _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(true);
             _mockValidator.Setup(x => x.ValidatePageRange(It.IsAny<int>(), It.IsAny<int>())).Returns(true);
 
-            _mockStore.Setup(x => x.FindUsersByEmail(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new MembershipUserCollection(
+            _mockStore.Setup(x => x.FindUsersByName(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new MembershipUserCollection(
                 new List<MembershipUser>()
                 {
                     foundUser
                 }, 1));
 
-            MembershipUserCollection users = await _sut.FindUsersByEmail(new FindUsersRequest()
-            {
-                Criteria = "email",
-                PageIndex = 3,
-                PageSize = 5
-            });
+            MembershipUserCollection users = await _sut.FindUsersByName(new FindUsersRequest("username", 3, 5));
 
             Assert.That(users.Count, Is.EqualTo(1));
             Assert.That(users.Users, Has.Count.EqualTo(1));

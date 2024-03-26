@@ -6,9 +6,9 @@ using SqlMembershipAdapter.Models.Result;
 
 namespace SqlMembershipAdapter.Tests
 {
-    public class GetPasswordDataTests
+    public class GetPasswordTests
     {
-        private SqlMembership _sut;
+        private SqlMembershipClient _sut;
 
         private Mock<ISqlMembershipStore> _mockStore;
         private Mock<ISqlMembershipSettings> _mockSettings;
@@ -23,7 +23,7 @@ namespace SqlMembershipAdapter.Tests
             _mockValidator = new Mock<ISqlMembershipValidator>();
             _mockEncryption = new Mock<ISqlMembershipEncryption>();
 
-            _sut = new SqlMembership(
+            _sut = new SqlMembershipClient(
                 _mockStore.Object,
                 _mockValidator.Object,
                 _mockEncryption.Object,
@@ -44,7 +44,7 @@ namespace SqlMembershipAdapter.Tests
                 PasswordFormat = passwordFormat
             });
 
-            PasswordData passwordData = await _sut.GetPasswordData("Username");
+            PasswordData passwordData = await _sut.GetPassword("Username");
 
             _mockStore.Verify(x => x.GetPasswordWithFormat(It.IsAny<string>(), false), Times.Once);
 
@@ -61,7 +61,7 @@ namespace SqlMembershipAdapter.Tests
         {
             _mockStore.Setup(x => x.GetPasswordWithFormat(It.IsAny<string>(), false)).ReturnsAsync(new GetPasswordWithFormatResult());
 
-            PasswordData passwordData = await _sut.GetPasswordData("Username");
+            PasswordData passwordData = await _sut.GetPassword("Username");
 
             _mockStore.Verify(x => x.GetPasswordWithFormat(It.IsAny<string>(), false), Times.Once);
 

@@ -5,35 +5,35 @@
     /// </summary>
     public class FindUsersRequest
     {
-        private string _criteria = string.Empty;
-        private int pageIndex;
-        private int pageSize;
-
         /// <summary>
         /// Search criteria for finding users.
         /// </summary>
-        public string Criteria
-        {
-            get => _criteria;
-            set => _criteria = value?.Trim() ?? string.Empty;
-        }
+        public string Criteria { get; }
 
         /// <summary>
         /// Index of the page results from the search.
         /// </summary>
-        public int PageIndex
-        {
-            get => pageIndex;
-            set => pageIndex = value < 0 ? 0 : value;
-        }
+        public int PageIndex { get; }
 
         /// <summary>
         /// Size of the page results from the search.
         /// </summary>
-        public int PageSize
+        public int PageSize { get; }
+
+        /// <summary>
+        /// Initialises a new find user request.
+        /// </summary>
+        /// <param name="criteria">Search criteria.</param>
+        /// <param name="pageIndex">Index of the page results from the search.</param>
+        /// <param name="pageSize">Size of the page results.</param>
+        public FindUsersRequest(
+            string criteria,
+            int pageIndex,
+            int pageSize)
         {
-            get => pageSize;
-            set => pageSize = value < 1 ? 1 : value;
+            Criteria = criteria?.Trim() ?? string.Empty;
+            PageIndex = pageIndex < 0 ? 0 : pageIndex;
+            PageSize = pageSize < 1 ? 1 : pageSize;
         }
     }
 }

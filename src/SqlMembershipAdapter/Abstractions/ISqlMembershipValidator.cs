@@ -15,5 +15,7 @@ namespace SqlMembershipAdapter.Abstractions
         bool ValidateCreateUserRequest(CreateUserRequest request, out MembershipCreateStatus status);
         bool ValidateChangePasswordQuestionAnswer(ChangePasswordQuestionAndAnswerRequest request, out string? invalidParam);
         bool ValidateChangePasswordRequest(ChangePasswordRequest request, out string? invalidParam);
+        bool ValidateRoleName(string? roleName);
+        bool ValidateArray(string[] param);
     }
 }
