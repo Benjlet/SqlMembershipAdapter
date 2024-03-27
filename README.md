@@ -44,7 +44,7 @@ SqlMembershipClient membership = new(new SqlMembershipSettings("connectionString
     MinRequiredNonAlphanumericCharacters = 1
 });
 
-CreateUserResult createUserResult = await _sut.CreateUser(new CreateUserRequest(
+CreateUserResult createUserResult = await membership.CreateUser(new CreateUserRequest(
 	username, password, email, passwordQuestion, passwordAnswer, isApproved, userId));
 ```
 
