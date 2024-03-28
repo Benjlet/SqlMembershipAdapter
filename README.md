@@ -81,7 +81,10 @@ roleProvider.AddUsersToRoles(usernames, roleNames);
 The `SqlRoleClient` adapter uses identical param types:
 
 ```
-SqlRoleClient roleClient = new("connectionString");
+SqlRoleProvider roleClient = new(new SqlMembershipSettings("connectionString")
+{
+    ApplicationName = "/example"
+});
 
 string[] usernames = { "user1", "user2" };
 string[] roleNames = { "role1", "role2" };
