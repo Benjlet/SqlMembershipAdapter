@@ -138,6 +138,56 @@
         }
 
         /// <summary>
+        /// Initialises a new Membership user with the supplied details.
+        /// </summary>
+        /// <param name="providerName">Provider name.</param>
+        /// <param name="userName">Username.</param>
+        /// <param name="providerUserKey">Provider user key (UserId); you may set to <see langword="null"/> for new users.</param>
+        /// <param name="email">Email.</param>
+        /// <param name="passwordQuestion">Password question.</param>
+        /// <param name="comment">Comment.</param>
+        /// <param name="isApproved">User approval state.</param>
+        /// <param name="isLockedOut">User lock state.</param>
+        /// <param name="creationDate">Creation date.</param>
+        /// <param name="lastLoginDate">Last login date.</param>
+        /// <param name="lastActivityDate">Last activity date.</param>
+        /// <param name="lastPasswordChangedDate">Last password changed date.</param>
+        /// <param name="lastLockoutDate">Last lockout date.</param>
+        /// <exception cref="ArgumentNullException"/>
+        public MembershipUser(
+            string providerName,
+            string? userName,
+            object providerUserKey,
+            string? email,
+            string? passwordQuestion,
+            string? comment,
+            bool isApproved,
+            bool isLockedOut,
+            DateTime creationDate,
+            DateTime lastLoginDate,
+            DateTime lastActivityDate,
+            DateTime lastPasswordChangedDate,
+            DateTime lastLockoutDate)
+        {
+            _providerName = providerName ?? throw new ArgumentNullException(nameof(providerName));
+            _providerUserKey = providerUserKey == null || !Guid.TryParse(providerUserKey.ToString(), out Guid userKey) ? null : userKey;
+
+            _email = email?.Trim();
+            _userName = userName?.Trim();
+            _comment = comment?.Trim();
+            _passwordQuestion = passwordQuestion?.Trim();
+
+            _isApproved = isApproved;
+            _isLockedOut = isLockedOut;
+
+            _creationDate = creationDate.ToUniversalTime();
+            _lastLoginDate = lastLoginDate.ToUniversalTime();
+            _lastActivityDate = lastActivityDate.ToUniversalTime();
+            _lastPasswordChangedDate = lastPasswordChangedDate.ToUniversalTime();
+            _lastLockoutDate = lastLockoutDate.ToUniversalTime();
+        }
+
+        /// <summary>
         /// Determines if the user's last activity date is within the supplied time window.
         /// </summary>
         /// <param name="timeWindow">The time window for when the user last had activity.</param>
