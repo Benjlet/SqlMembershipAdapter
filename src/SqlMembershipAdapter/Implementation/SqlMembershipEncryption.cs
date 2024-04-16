@@ -87,10 +87,9 @@ namespace SqlMembershipAdapter.Implementation
                 return text;
             }
 
-            text = text.ToLower(CultureInfo.InvariantCulture);
-
             byte[] bIn = Encoding.Unicode.GetBytes(text);
             byte[] bSalt = Convert.FromBase64String(salt);
+            byte[] bRet = null;
 
             HashAlgorithm hm = _settings.HashAlgorithm switch
             {
@@ -102,12 +101,38 @@ namespace SqlMembershipAdapter.Implementation
                 _ => SHA1.Create(),
             };
 
-            byte[] bAll = new byte[bSalt.Length + bIn.Length];
-
-            Buffer.BlockCopy(bSalt, 0, bAll, 0, bSalt.Length);
-            Buffer.BlockCopy(bIn, 0, bAll, bSalt.Length, bIn.Length);
-
-            byte[] bRet = hm.ComputeHash(bAll);
+            if (hm is KeyedHashAlgorithm kha)
+            {
+                if (kha.Key.Length == bSalt.Length)
+                {
+                    kha.Key = bSalt;
+                }
+                else if (kha.Key.Length < bSalt.Length)
+                {
+                    byte[] bKey = new byte[kha.Key.Length];
+                    Buffer.BlockCopy(bSalt, 0, bKey, 0, bKey.Length);
+                    kha.Key = bKey;
+                }
+                else
+                {
+                    byte[] bKey = new byte[kha.Key.Length];
+                    for (int iter = 0; iter < bKey.Length;)
+                    {
+                        int len = Math.Min(bSalt.Length, bKey.Length - iter);
+                        Buffer.BlockCopy(bSalt, 0, bKey, iter, len);
+                        iter += len;
+                    }
+                    kha.Key = bKey;
+                }
+                bRet = kha.ComputeHash(bIn);
+            }
+            else
+            {
+                byte[] bAll = new byte[bSalt.Length + bIn.Length];
+                Buffer.BlockCopy(bSalt, 0, bAll, 0, bSalt.Length);
+                Buffer.BlockCopy(bIn, 0, bAll, bSalt.Length, bIn.Length);
+                bRet = hm.ComputeHash(bAll);
+            }
 
             return Convert.ToBase64String(bRet);
         }

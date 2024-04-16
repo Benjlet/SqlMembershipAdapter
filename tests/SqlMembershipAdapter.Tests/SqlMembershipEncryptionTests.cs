@@ -9,14 +9,14 @@ namespace SqlMembershipAdapter.Tests
 {
     public class SqlMembershipEncryptionTests
     {
-        private const string TextForEncryption = "TextForEncryption";
-        private const string SaltForEncryption = "hJxc4wwxfp7DrJNuP8IscA==";
+        private const string TextForEncryption = "3GrM4v[eYgK-UT";
+        private const string SaltForEncryption = "wZdnRVXWcvXZKY6HJmJqUg==";
 
-        private const string ExpectedEncodedMD5 = "0P7nvutw8a4pn/xlioe0dA==";
-        private const string ExpectedEncodedSHA1 = "Tce9itFwkX45k8B5W6Ua/ssrbZ4=";
-        private const string ExpectedEncodedSHA256 = "vJh6o+cZKaT8DIyuxUJPcP2a7q0eu4F1DfcZLdEr6aA=";
-        private const string ExpectedEncodedSHA384 = "RaWvZfY2oG3dGbnaJYxpml/+390HdRRzPPS70qUxBS8Ejbjeh78zBWmad9tYOEtg";
-        private const string ExpectedEncodedSHA512 = "e7+DREUe8AwDfOEvXx2QZUASB4kAnO+uN1Qm9GCgU+7YJaSV6qcahRkFQ5gBEPSZ0F5GgioRju7h+UgrROVCzQ==";
+        private const string ExpectedEncodedMD5 = "Ux6iZnp/kSSqFLjP+jT/Qw==";
+        private const string ExpectedEncodedSHA1 = "Vz9mJxudAR4ZVJTNI4W+oH7m3X0=";
+        private const string ExpectedEncodedSHA256 = "Kqx+vXAfjf0esjMOR/Ls6rPijWFh3+ObJfA79YH30V8=";
+        private const string ExpectedEncodedSHA384 = "gJyk9LnmCJvQRUxTIbUt+KRohZRy8vN30MWSCuQ5ywnKYQy28Df5yQ7GZvgFSnD3";
+        private const string ExpectedEncodedSHA512 = "3axEbdUmy8RM4eN/oIoeAtWhqcrerF2UCf9qtrMaQ3xhCVeuS82vKlNTaPaLAa7JCIHGSw7QXVPEoBJXRLWLFw==";
 
         private SqlMembershipEncryption _sut;
         
