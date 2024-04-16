@@ -32,34 +32,25 @@ namespace SqlMembershipAdapter.Tests
         }
 
         [Test]
-        public void ValidateUser_UsernameValidationFailed_ReturnsParam()
+        public async Task ValidateUser_UsernameValidationFailed_ReturnsFalse()
         {
-            string failedParam = "Username";
-
             _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(false);
+            _mockValidator.Setup(x => x.ValidatePassword(It.IsAny<string>())).Returns(true);
 
-            ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
-            {
-                await _sut.ValidateUser(new ValidateUserRequest("username", "password"));
-            });
+            bool result = await _sut.ValidateUser(new ValidateUserRequest("username", "password"));
 
-            Assert.That(exception.Message, Is.EqualTo(failedParam));
+            Assert.That(result, Is.False);
         }
 
         [Test]
-        public void ValidateUser_PasswordValidationFailed_ReturnsParam()
+        public async Task ValidateUser_PasswordValidationFailed_ReturnsFalse()
         {
-            string failedParam = "Password";
-
             _mockValidator.Setup(x => x.ValidateUsername(It.IsAny<string>())).Returns(true);
             _mockValidator.Setup(x => x.ValidatePassword(It.IsAny<string>())).Returns(false);
 
-            ArgumentException exception = Assert.ThrowsAsync<ArgumentException>(async () =>
-            {
-                await _sut.ValidateUser(new ValidateUserRequest("username", "password"));
-            });
+            bool result = await _sut.ValidateUser(new ValidateUserRequest("username", "password"));
 
-            Assert.That(exception.Message, Is.EqualTo(failedParam));
+            Assert.That(result, Is.False);
         }
 
         [Test]
