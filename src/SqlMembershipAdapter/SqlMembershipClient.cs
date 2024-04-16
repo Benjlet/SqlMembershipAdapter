@@ -218,12 +218,12 @@ namespace SqlMembershipAdapter
         {
             if (!_validator.ValidateUsername(request.Username))
             {
-                throw new ArgumentException(nameof(request.Username));
+                return false;
             }
 
             if (!_validator.ValidatePassword(request.Password))
             {
-                throw new ArgumentException(nameof(request.Password));
+                return false;
             }
 
             CheckPasswordResult isValidPassword = await CheckPassword(request.Username, request.Password, true, true).ConfigureAwait(false);
